@@ -18,21 +18,28 @@ export default function Home() {
   const loadData = async () => {
     try {
       setLoading(true)
+      console.log('开始加载数据...')
 
       // 加载产品
-      const { data: productsData } = await getSupabase()
+      const { data: productsData, error: productsError } = await getSupabase()
         .from('products')
         .select('*')
         .order('createdAt', { ascending: false })
+
+      console.log('产品数据:', productsData)
+      console.log('产品错误:', productsError)
 
       if (productsData) {
         setProducts(productsData)
       }
 
       // 加载统计数据
-      const { data: sentimentsData } = await getSupabase()
+      const { data: sentimentsData, error: sentimentsError } = await getSupabase()
         .from('sentiments')
         .select('*')
+
+      console.log('舆情数据:', sentimentsData)
+      console.log('舆情错误:', sentimentsError)
 
       if (sentimentsData) {
         const positiveCount = sentimentsData.filter((s: any) => s.sentiment === 'positive').length
