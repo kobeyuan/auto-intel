@@ -250,20 +250,27 @@ export async function searchIndustryNews(
     console.log(`搜索行业新闻 [${category}]: ${query}`)
     console.log(`请求URL: ${url}`)
 
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'Accept-Encoding': 'gzip',
-        'X-Subscription-Token': BRAVE_API_KEY
+    console.log(`请求URL（编码后）: ${url}`)
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip',
+          'X-Subscription-Token': BRAVE_API_KEY
+        }
+      })
+
+      console.log(`响应状态: ${response.status} ${response.statusText}`)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Brave API 错误: ${response.status}`, errorText.substring(0, 200))
+        return []
       }
-    })
 
-    if (!response.ok) {
-      console.error(`Brave API 错误: ${response.status}`, await response.text())
-      return []
-    }
-
-    const data: BraveSearchResult = await response.json()
+      const data: BraveSearchResult = await response.json()
+      console.log(`API返回数据结构:`, Object.keys(data))
 
     const results = data.web?.results?.map(result => ({
       title: result.title,
