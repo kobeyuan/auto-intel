@@ -12,11 +12,61 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const maxResultsPerCategory = body.maxResults || 3
     const debugMode = body.debug || false
+    const testMode = body.testMode || body.testRaw || body.action === 'rawTest'
 
     console.log('开始采集行业新闻...')
     console.log('Brave API Key 配置:', process.env.BRAVE_API_KEY ? '已配置' : '未配置')
+    console.log('测试模式:', testMode)
 
-    // 搜索所有类别的行业新闻
+    // 如果是测试模式，直接测试 Brave API
+    if (testMode) {
+      const testQuery = body.query || '自动驾驶'
+      const testCount = body.count || 3
+      
+      console.log(`测试模式: 搜索 "${testQuery}"，数量 ${testCount}`)
+      
+      // 直接测试 Brave API
+      const testUrl = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(testQuery)}&count=${testCount}`
+      
+      const response = await fetch(testUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Subscription-Token': process.env.BRAVE_API_KEY || ''
+        }
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Brave API 错误:', response.status, errorText)
+        return NextResponse.json({
+          success: false,
+          error: `Brave API 错误: ${response.status}`,
+          details: errorText.substring(0, 200)
+        })
+      }
+      
+      const data = await response.json()
+      const results = data.web?.results || []
+      
+      console.log(`Brave API 返回 ${results.length} 条结果`)
+      
+      // 返回原始数据用于调试
+      return NextResponse.json({
+        success: true,
+        message: 'Brave API 测试完成',
+        query: testQuery,
+        rawData: data,
+        resultsCount: results.length,
+        results: results.map(r => ({
+          title: r.title,
+          url: r.url,
+          snippet: r.snippet?.substring(0, 100)
+        })),
+        sampleTitles: results.map(r => r.title)
+      })
+    }
+
+    // 正常模式：搜索所有类别的行业新闻
     const industryResults = await searchAllIndustryNews(maxResultsPerCategory)
     
     if (debugMode) {
