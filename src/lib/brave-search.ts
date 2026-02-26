@@ -83,3 +83,38 @@ export async function searchAllIndustryNews(maxResults: number = 3): Promise<Rec
 
   return results
 }
+
+// 分析情感（简化版）
+export function analyzeIndustrySentiment(title: string, content: string): 'positive' | 'neutral' | 'negative' {
+  const positiveKeywords = ['突破', '创新', '合作', '融资', '发布', '增长']
+  const negativeKeywords = ['事故', '问题', '故障', '召回', '亏损', '失败']
+
+  const text = (title + ' ' + content).toLowerCase()
+  
+  let positiveScore = 0
+  let negativeScore = 0
+
+  positiveKeywords.forEach(keyword => {
+    if (text.includes(keyword)) positiveScore++
+  })
+
+  negativeKeywords.forEach(keyword => {
+    if (text.includes(keyword)) negativeScore++
+  })
+
+  if (positiveScore > negativeScore) return 'positive'
+  if (negativeScore > positiveScore) return 'negative'
+  return 'neutral'
+}
+
+// 分析重要性（简化版）
+export function analyzeIndustryImportance(title: string, source: string, category: string): 'high' | 'medium' | 'low' {
+  const highSources = ['工信部', '国家标准', '特斯拉', '华为']
+  const highKeywords = ['标准', '法规', '政策', '安全', '事故']
+  
+  if (highSources.some(s => source.includes(s))) return 'high'
+  if (highKeywords.some(k => title.toLowerCase().includes(k.toLowerCase()))) return 'high'
+  
+  if (category === 'policy' || category === 'technology') return 'medium'
+  return 'low'
+}
