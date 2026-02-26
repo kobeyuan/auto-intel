@@ -227,20 +227,21 @@ export async function searchIndustryNews(
     
     switch (category) {
       case 'technology':
-        query = '自动驾驶 技术 突破 最新消息 site:36kr.com OR site:huxiu.com OR site:tmtpost.com'
+        // 简化查询，先测试一个网站
+        query = '自动驾驶 最新消息 site:36kr.com'
         break
       case 'product':
-        query = '智能座舱 新车 发布 体验 site:autohome.com.cn OR site:dongchedi.com OR site:gasgoo.com'
+        query = '智能座舱 新车 发布 site:autohome.com.cn'
         break
       case 'policy':
-        query = '智能网联汽车 政策 标准 法规 site:miit.gov.cn OR site:gov.cn'
+        query = '智能网联汽车 政策 site:gov.cn'
         break
       case 'company':
-        query = '特斯拉 华为 百度 小鹏 蔚来 融资 合作 最新动态'
-        searchLang = 'zh'
+        // 公司动态不使用 site: 限制
+        query = '特斯拉 华为 融资 合作 最新'
         break
       default:
-        query = '智能汽车 行业 新闻 最新'
+        query = '智能汽车 新闻'
     }
     
     // 添加语言和地区参数
@@ -273,36 +274,23 @@ export async function searchIndustryNews(
 
     console.log(`找到 ${results.length} 条原始结果 [${category}]`)
     
-    // 过滤掉明显不相关的结果
+    // 简化过滤逻辑，先获取数据
     const filteredResults = results.filter(result => {
-      const title = result.title.toLowerCase()
-      const url = result.url.toLowerCase()
-      const snippet = result.snippet?.toLowerCase() || ''
+      const title = result.title || ''
+      const url = result.url || ''
       
-      // 排除不想要的网站
+      // 只排除最不相关的
       const excludeDomains = [
-        'wikipedia.org', 'zhihu.com', 'baike.baidu.com', 
-        'tesla.com', 'youtube.com', 'twitter.com', 'x.com'
+        'wikipedia.org', 'tesla.com', 'youtube.com'
       ]
       
-      if (excludeDomains.some(domain => url.includes(domain))) {
+      if (excludeDomains.some(domain => url.toLowerCase().includes(domain))) {
         return false
       }
       
-      // 检查是否包含相关中文关键词
-      const relevantKeywords = [
-        '自动驾驶', '智能驾驶', '智能座舱', '车联网', '汽车',
-        '特斯拉', '华为', '百度', '小鹏', '蔚来', '理想', '比亚迪',
-        '激光雷达', '毫米波雷达', '高精地图', '车路协同',
-        '融资', '合作', '发布', '政策', '标准', '法规'
-      ]
-      
-      // 检查是否包含中文（避免英文结果）
+      // 检查是否包含中文（基本过滤）
       const hasChinese = /[\\u4e00-\\u9fa5]/.test(title)
-      
-      return hasChinese && relevantKeywords.some(keyword => 
-        title.includes(keyword) || snippet.includes(keyword)
-      )
+      return hasChinese
     })
     
     console.log(`过滤后剩余 ${filteredResults.length} 条中文行业新闻`)
