@@ -21,48 +21,36 @@ export default function Home() {
       console.log('开始加载数据...')
 
       // 加载产品
-      const { data: productsData, error: productsError } = await getSupabase()
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const productsResponse = await fetch('/api/products')
+      const productsResult = await productsResponse.json()
+      console.log('产品数据:', productsResult)
 
-      console.log('产品数据:', productsData)
-      console.log('产品数据长度:', productsData?.length)
-      console.log('产品错误:', productsError)
-
-      if (productsError) {
-        console.error('产品查询错误:', productsError.message)
+      if (!productsResponse.ok) {
+        console.error('产品查询错误:', productsResult)
+      } else {
+        setProducts(productsResult.products || [])
       }
 
-      if (productsData) {
-        setProducts(productsData)
-      }
+      // 加载舆情数据
+      const sentimentsResponse = await fetch('/api/sentiments')
+      const sentimentsResult = await sentimentsResponse.json()
+      console.log('舆情数据:', sentimentsResult)
 
-      // 加载统计数据
-      const { data: sentimentsData, error: sentimentsError } = await getSupabase()
-        .from('sentiments')
-        .select('*')
-
-      console.log('舆情数据:', sentimentsData)
-      console.log('舆情数据长度:', sentimentsData?.length)
-      console.log('舆情错误:', sentimentsError)
-
-      if (sentimentsError) {
-        console.error('舆情查询错误:', sentimentsError.message)
-      }
-
-      if (sentimentsData) {
-        const positiveCount = sentimentsData.filter((s: any) => s.sentiment === 'positive').length
-        const neutralCount = sentimentsData.filter((s: any) => s.sentiment === 'neutral').length
-        const negativeCount = sentimentsData.filter((s: any) => s.sentiment === 'negative').length
+      if (!sentimentsResponse.ok) {
+        console.error('舆情查询错误:', sentimentsResult)
+      } else if (sentimentsResult.sentiments) {
+        const sentiments = sentimentsResult.sentiments
+        const positiveCount = sentiments.filter((s: any) => s.sentiment === 'positive').length
+        const neutralCount = sentiments.filter((s: any) => s.sentiment === 'neutral').length
+        const negativeCount = sentiments.filter((s: any) => s.sentiment === 'negative').length
 
         setStats({
-          totalProducts: productsData?.length || 0,
-          totalSentiments: sentimentsData.length,
+          totalProducts: productsResult.products?.length || 0,
+          totalSentiments: sentiments.length,
           positiveCount,
           neutralCount,
           negativeCount,
-          recentSentiments: sentimentsData
+          recentSentiments: sentiments
             .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
             .slice(0, 10)
         })

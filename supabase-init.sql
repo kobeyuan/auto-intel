@@ -105,7 +105,7 @@ FROM products WHERE name = '鸿蒙智能座舱';
 -- 7. 验证数据
 SELECT 'Products count:' as info, COUNT(*) as count FROM products
 UNION ALL
-SELECT 'Sentiments count:', COUNT(*) FROM sentiments;
+SELECT 'Sentiments count:', COUNT(*) as count FROM sentiments;
 
 -- 8. 显示示例数据
 SELECT 'Sample products:' as info;
