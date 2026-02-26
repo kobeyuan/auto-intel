@@ -5,21 +5,21 @@ export interface Product {
   brand: string;
   category: 'autonomous-driving' | 'smart-cockpit';
   description: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 // 舆情类型
 export interface Sentiment {
   id: string;
-  productId: string;
+  product_id: string;
   title: string;
   content: string;
   source: string;
-  sourceUrl?: string;
+  source_url?: string;
   sentiment: 'positive' | 'neutral' | 'negative';
   confidence: number;
-  publishedAt: Date;
-  createdAt: Date;
+  published_at: Date;
+  created_at: Date;
   keywords: string[];
 }
 

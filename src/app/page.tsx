@@ -24,10 +24,15 @@ export default function Home() {
       const { data: productsData, error: productsError } = await getSupabase()
         .from('products')
         .select('*')
-        .order('createdAt', { ascending: false })
+        .order('created_at', { ascending: false })
 
       console.log('产品数据:', productsData)
+      console.log('产品数据长度:', productsData?.length)
       console.log('产品错误:', productsError)
+
+      if (productsError) {
+        console.error('产品查询错误:', productsError.message)
+      }
 
       if (productsData) {
         setProducts(productsData)
@@ -39,7 +44,12 @@ export default function Home() {
         .select('*')
 
       console.log('舆情数据:', sentimentsData)
+      console.log('舆情数据长度:', sentimentsData?.length)
       console.log('舆情错误:', sentimentsError)
+
+      if (sentimentsError) {
+        console.error('舆情查询错误:', sentimentsError.message)
+      }
 
       if (sentimentsData) {
         const positiveCount = sentimentsData.filter((s: any) => s.sentiment === 'positive').length
@@ -53,7 +63,7 @@ export default function Home() {
           neutralCount,
           negativeCount,
           recentSentiments: sentimentsData
-            .sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+            .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
             .slice(0, 10)
         })
       }
@@ -256,7 +266,7 @@ export default function Home() {
                         {sentiment.source}
                       </span>
                       <span className="text-slate-400">
-                        {new Date(sentiment.publishedAt).toLocaleDateString('zh-CN')}
+                        {new Date(sentiment.published_at).toLocaleDateString('zh-CN')}
                       </span>
                     </div>
                   </div>

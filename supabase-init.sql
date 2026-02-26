@@ -1,7 +1,11 @@
 -- Supabase 数据库初始化脚本
 -- 在 Supabase SQL Editor 中运行此脚本
 
--- 1. 创建产品表
+-- 1. 先删除现有表（如果存在）
+DROP TABLE IF EXISTS sentiments CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+
+-- 2. 创建产品表
 CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -11,7 +15,7 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. 创建舆情表
+-- 3. 创建舆情表
 CREATE TABLE IF NOT EXISTS sentiments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID REFERENCES products(id) ON DELETE CASCADE,
@@ -26,13 +30,13 @@ CREATE TABLE IF NOT EXISTS sentiments (
   keywords TEXT[]
 );
 
--- 3. 创建索引
+-- 4. 创建索引
 CREATE INDEX IF NOT EXISTS idx_sentiments_product_id ON sentiments(product_id);
 CREATE INDEX IF NOT EXISTS idx_sentiments_sentiment ON sentiments(sentiment);
 CREATE INDEX IF NOT EXISTS idx_sentiments_published_at ON sentiments(published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 
--- 4. 插入示例产品
+-- 5. 插入示例产品
 INSERT INTO products (name, brand, category, description) VALUES
   ('FSD Beta', 'Tesla', 'autonomous-driving', '完全自动驾驶Beta版'),
   ('City NOA', '理想汽车', 'autonomous-driving', '城市导航辅助驾驶'),
@@ -45,7 +49,7 @@ INSERT INTO products (name, brand, category, description) VALUES
   ('Xmart OS', '小鹏汽车', 'smart-cockpit', '小鹏智能座舱系统'),
   ('车机OS', '特斯拉', 'smart-cockpit', '特斯拉车载操作系统');
 
--- 5. 插入示例舆情数据
+-- 6. 插入示例舆情数据
 INSERT INTO sentiments (product_id, title, content, source, source_url, sentiment, confidence, published_at, keywords)
 SELECT
   id,
@@ -97,3 +101,15 @@ SELECT
   NOW() - INTERVAL '1 day',
   ARRAY['鸿蒙', '生态', '流畅']
 FROM products WHERE name = '鸿蒙智能座舱';
+
+-- 7. 验证数据
+SELECT 'Products count:' as info, COUNT(*) as count FROM products
+UNION ALL
+SELECT 'Sentiments count:', COUNT(*) FROM sentiments;
+
+-- 8. 显示示例数据
+SELECT 'Sample products:' as info;
+SELECT * FROM products LIMIT 5;
+
+SELECT 'Sample sentiments:' as info;
+SELECT * FROM sentiments LIMIT 5;
