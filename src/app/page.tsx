@@ -21,18 +21,23 @@ export default function Home() {
       console.log('开始加载数据...')
 
       // 加载产品
+      console.log('正在请求 /api/products...')
       const productsResponse = await fetch('/api/products')
+      console.log('产品响应状态:', productsResponse.status, productsResponse.ok)
       const productsResult = await productsResponse.json()
       console.log('产品数据:', productsResult)
 
       if (!productsResponse.ok) {
         console.error('产品查询错误:', productsResult)
       } else {
+        console.log('设置产品数据，数量:', productsResult.products?.length || 0)
         setProducts(productsResult.products || [])
       }
 
       // 加载舆情数据
+      console.log('正在请求 /api/sentiments...')
       const sentimentsResponse = await fetch('/api/sentiments')
+      console.log('舆情响应状态:', sentimentsResponse.status, sentimentsResponse.ok)
       const sentimentsResult = await sentimentsResponse.json()
       console.log('舆情数据:', sentimentsResult)
 
@@ -44,6 +49,12 @@ export default function Home() {
         const neutralCount = sentiments.filter((s: any) => s.sentiment === 'neutral').length
         const negativeCount = sentiments.filter((s: any) => s.sentiment === 'negative').length
 
+        console.log('统计数据:')
+        console.log('- 正面:', positiveCount)
+        console.log('- 中性:', neutralCount)
+        console.log('- 负面:', negativeCount)
+        console.log('- 总数:', sentiments.length)
+
         setStats({
           totalProducts: productsResult.products?.length || 0,
           totalSentiments: sentiments.length,
@@ -54,10 +65,14 @@ export default function Home() {
             .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
             .slice(0, 10)
         })
+        console.log('stats 已设置')
+      } else {
+        console.log('sentimentsResult.sentiments 不存在:', sentimentsResult)
       }
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
+      console.log('加载完成，设置 loading=false')
       setLoading(false)
     }
   }
