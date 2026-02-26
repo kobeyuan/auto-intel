@@ -213,7 +213,7 @@ export const INDUSTRY_SOURCES = [
 export async function searchIndustryNews(
   category: keyof typeof INDUSTRY_KEYWORDS = 'technology',
   maxResults: number = 10,
-  freshness: string = 'pm' // past month 改为过去一个月，增加结果
+  freshness: string = 'pw' // past week 改为过去一周，获取更新内容
 ): Promise<SearchResult[]> {
   if (!BRAVE_API_KEY) {
     console.error('BRAVE_API_KEY not configured')
@@ -221,18 +221,30 @@ export async function searchIndustryNews(
   }
 
   try {
-    // 从该类别中选择关键词（不再随机，使用固定关键词提高命中率）
-    const keywords = INDUSTRY_KEYWORDS[category]
-    // 使用更通用的关键词
-    const keyword = category === 'technology' ? '自动驾驶' :
-                   category === 'product' ? '智能座舱' :
-                   category === 'policy' ? '智能网联汽车政策' :
-                   '智能汽车'
+    // 根据类别选择关键词和搜索策略
+    let query = ''
+    let searchLang = 'zh'
     
-    // 放宽来源限制，不限制特定网站
-    const query = `${keyword} 新闻 最新`
+    switch (category) {
+      case 'technology':
+        query = '自动驾驶 技术 突破 最新消息 site:36kr.com OR site:huxiu.com OR site:tmtpost.com'
+        break
+      case 'product':
+        query = '智能座舱 新车 发布 体验 site:autohome.com.cn OR site:dongchedi.com OR site:gasgoo.com'
+        break
+      case 'policy':
+        query = '智能网联汽车 政策 标准 法规 site:miit.gov.cn OR site:gov.cn'
+        break
+      case 'company':
+        query = '特斯拉 华为 百度 小鹏 蔚来 融资 合作 最新动态'
+        searchLang = 'zh'
+        break
+      default:
+        query = '智能汽车 行业 新闻 最新'
+    }
     
-    const url = `${BRAVE_API_URL}?q=${encodeURIComponent(query)}&count=${maxResults}&fresh=${freshness}`
+    // 添加语言和地区参数
+    const url = `${BRAVE_API_URL}?q=${encodeURIComponent(query)}&count=${maxResults}&fresh=${freshness}&search_lang=${searchLang}&country=CN`
 
     console.log(`搜索行业新闻 [${category}]: ${query}`)
 
@@ -258,22 +270,54 @@ export async function searchIndustryNews(
       publishedAt: new Date().toISOString()
     })) || []
 
-    console.log(`找到 ${results.length} 条行业新闻 [${category}]`)
+    console.log(`找到 ${results.length} 条原始结果 [${category}]`)
     
     // 过滤掉明显不相关的结果
     const filteredResults = results.filter(result => {
       const title = result.title.toLowerCase()
-      const snippet = result.snippet.toLowerCase()
+      const url = result.url.toLowerCase()
+      const snippet = result.snippet?.toLowerCase() || ''
       
-      // 检查是否包含相关关键词
-      const relevantKeywords = ['自动驾驶', '智能驾驶', '智能座舱', '车联网', '汽车', '特斯拉', '华为', '比亚迪', '小鹏', '蔚来']
-      return relevantKeywords.some(keyword => 
+      // 排除不想要的网站
+      const excludeDomains = [
+        'wikipedia.org', 'zhihu.com', 'baike.baidu.com', 
+        'tesla.com', 'youtube.com', 'twitter.com', 'x.com'
+      ]
+      
+      if (excludeDomains.some(domain => url.includes(domain))) {
+        return false
+      }
+      
+      // 检查是否包含相关中文关键词
+      const relevantKeywords = [
+        '自动驾驶', '智能驾驶', '智能座舱', '车联网', '汽车',
+        '特斯拉', '华为', '百度', '小鹏', '蔚来', '理想', '比亚迪',
+        '激光雷达', '毫米波雷达', '高精地图', '车路协同',
+        '融资', '合作', '发布', '政策', '标准', '法规'
+      ]
+      
+      // 检查是否包含中文（避免英文结果）
+      const hasChinese = /[\\u4e00-\\u9fa5]/.test(title)
+      
+      return hasChinese && relevantKeywords.some(keyword => 
         title.includes(keyword) || snippet.includes(keyword)
       )
     })
     
-    console.log(`过滤后剩余 ${filteredResults.length} 条相关新闻`)
-    return filteredResults
+    console.log(`过滤后剩余 ${filteredResults.length} 条中文行业新闻`)
+    
+    // 如果过滤后结果太少，尝试放宽条件
+    if (filteredResults.length < 2 && results.length > 0) {
+      console.log('结果太少，尝试放宽过滤条件...')
+      // 只保留中文结果，不进行关键词过滤
+      const chineseResults = results.filter(result => 
+        /[\\u4e00-\\u9fa5]/.test(result.title)
+      )
+      console.log(`放宽后得到 ${chineseResults.length} 条中文结果`)
+      return chineseResults.slice(0, maxResults)
+    }
+    
+    return filteredResults.slice(0, maxResults)
 
   } catch (error) {
     console.error('行业新闻搜索错误:', error)
