@@ -10,6 +10,95 @@ export interface SearchResult {
   publishedAt?: string
 }
 
+// 搜索产品舆情（用于旧代码兼容）
+export async function searchProductSentiments(productName: string, maxResults: number = 5): Promise<SearchResult[]> {
+  if (!BRAVE_API_KEY) {
+    console.error('BRAVE_API_KEY not configured')
+    return []
+  }
+
+  try {
+    const query = `${productName} 评价 体验`
+    const url = `${BRAVE_API_URL}?q=${encodeURIComponent(query)}&count=${maxResults}`
+
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Subscription-Token': BRAVE_API_KEY
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Brave API error: ${response.status}`)
+    }
+
+    const data: any = await response.json()
+    const results = data.web?.results || []
+
+    return results.map((r: any) => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.snippet,
+      publishedAt: new Date().toISOString()
+    }))
+
+  } catch (error) {
+    console.error('Brave search error:', error)
+    return []
+  }
+}
+
+// 搜索品牌舆情（用于旧代码兼容）
+export async function searchBrandSentiments(brand: string, maxResults: number = 5): Promise<SearchResult[]> {
+  if (!BRAVE_API_KEY) {
+    console.error('BRAVE_API_KEY not configured')
+    return []
+  }
+
+  try {
+    const query = `${brand} 智能驾驶 评测`
+    const url = `${BRAVE_API_URL}?q=${encodeURIComponent(query)}&count=${maxResults}`
+
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Subscription-Token': BRAVE_API_KEY
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Brave API error: ${response.status}`)
+    }
+
+    const data: any = await response.json()
+    const results = data.web?.results || []
+
+    return results.map((r: any) => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.snippet,
+      publishedAt: new Date().toISOString()
+    }))
+
+  } catch (error) {
+    console.error('Brave search error:', error)
+    return []
+  }
+}
+
+// 批量搜索产品（用于旧代码兼容）
+export async function batchSearchProducts(productNames: string[]): Promise<Record<string, SearchResult[]>> {
+  const results: Record<string, SearchResult[]> = {}
+
+  for (const name of productNames) {
+    console.log(`Searching for: ${name}`)
+    results[name] = await searchProductSentiments(name, 3)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+
+  return results
+}
+
 // 搜索行业新闻（简化版）
 export async function searchIndustryNews(
   category: string = 'technology',
