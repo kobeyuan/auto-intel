@@ -57,12 +57,12 @@ export async function POST(request: NextRequest) {
         query: testQuery,
         rawData: data,
         resultsCount: results.length,
-        results: results.map(r => ({
+        results: results.map((r: any) => ({
           title: r.title,
           url: r.url,
           snippet: r.snippet?.substring(0, 100)
         })),
-        sampleTitles: results.map(r => r.title)
+        sampleTitles: results.map((r: any) => r.title)
       })
     }
 
