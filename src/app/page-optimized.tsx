@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Car, Brain, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import IndustryNewsPanel from '@/components/IndustryNewsPanel'
 
 export default function HomeOptimized() {
   const [products, setProducts] = useState<any[]>([])
@@ -244,11 +243,6 @@ export default function HomeOptimized() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Industry News Section */}
-        <div className="mt-8">
-          <IndustryNewsPanel limit={8} showControls={true} />
         </div>
       </main>
     </div>

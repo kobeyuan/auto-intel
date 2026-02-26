@@ -1,0 +1,191 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getSupabase } from '@/lib/supabase'
+import { 
+  searchAllIndustryNews, 
+  analyzeIndustrySentiment, 
+  analyzeIndustryImportance 
+} from '@/lib/brave-search'
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = getSupabase()
+    const body = await request.json()
+    const maxResultsPerCategory = body.maxResults || 3
+
+    console.log('开始采集行业新闻...')
+
+    // 搜索所有类别的行业新闻
+    const industryResults = await searchAllIndustryNews(maxResultsPerCategory)
+    console.log('搜索结果:', Object.keys(industryResults).map(k => `${k}: ${industryResults[k].length}`))
+
+    let totalAdded = 0
+    let totalSkipped = 0
+    const addedNews: any[] = []
+
+    // 处理每个类别的结果
+    for (const [category, results] of Object.entries(industryResults)) {
+      console.log(`处理类别 ${category}: ${results.length} 条结果`)
+
+      for (const result of results) {
+        try {
+          // 检查是否已存在（基于 URL）
+          const { data: existing } = await supabase
+            .from('industry_news')
+            .select('id')
+            .eq('source_url', result.url)
+            .single()
+
+          if (existing) {
+            console.log(`跳过已存在的新闻: ${result.title}`)
+            totalSkipped++
+            continue
+          }
+
+          // 提取来源（从 URL 中提取域名）
+          let source = '未知'
+          try {
+            const urlObj = new URL(result.url)
+            source = urlObj.hostname.replace('www.', '').split('.')[0]
+            source = source.charAt(0).toUpperCase() + source.slice(1)
+          } catch (e) {
+            source = '其他'
+          }
+
+          // 分析情感和重要性
+          const sentiment = analyzeIndustrySentiment(result.title, result.snippet)
+          const importance = analyzeIndustryImportance(result.title, source, category)
+
+          // 提取关键词（从标题中提取）
+          const keywords = extractKeywords(result.title)
+
+          // 准备新闻数据
+          const newsData = {
+            title: result.title,
+            content: result.snippet,
+            source: source,
+            source_url: result.url,
+            category: mapCategory(category),
+            keywords: keywords,
+            sentiment: sentiment,
+            importance: importance,
+            published_at: result.publishedAt || new Date().toISOString()
+          }
+
+          // 插入数据库
+          const { data, error } = await supabase
+            .from('industry_news')
+            .insert([newsData])
+            .select()
+            .single()
+
+          if (error) {
+            console.error(`插入失败: ${result.title}`, error)
+            continue
+          }
+
+          console.log(`添加成功: ${result.title}`)
+          totalAdded++
+          addedNews.push(data)
+
+          // 添加延迟避免请求过快
+          await new Promise(resolve => setTimeout(resolve, 500))
+
+        } catch (error) {
+          console.error(`处理新闻失败: ${result.title}`, error)
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: '行业新闻采集完成',
+      summary: {
+        totalAdded,
+        totalSkipped,
+        totalProcessed: totalAdded + totalSkipped
+      },
+      addedNews: addedNews.slice(0, 5) // 只返回前5条
+    })
+
+  } catch (error: any) {
+    console.error('行业新闻采集API错误:', error)
+    return NextResponse.json(
+      { 
+        success: false,
+        error: '行业新闻采集失败',
+        details: error.message 
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// 从标题中提取关键词
+function extractKeywords(title: string): string[] {
+  const commonWords = ['的', '了', '在', '是', '和', '与', '及', '等', '之', '为']
+  const keywords: string[] = []
+  
+  // 按中文标点和空格分割
+  const words = title.split(/[\s,，.。!！?？;；:：、]/)
+  
+  for (const word of words) {
+    const trimmed = word.trim()
+    if (trimmed.length > 1 && !commonWords.includes(trimmed)) {
+      keywords.push(trimmed)
+    }
+  }
+  
+  return keywords.slice(0, 5) // 最多返回5个关键词
+}
+
+// 映射类别
+function mapCategory(category: string): 'technology' | 'product' | 'policy' | 'funding' | 'partnership' | 'other' {
+  const categoryMap: Record<string, any> = {
+    'technology': 'technology',
+    'product': 'product',
+    'policy': 'policy',
+    'company': 'other' // 公司动态暂时归为other
+  }
+  
+  return categoryMap[category] || 'other'
+}
+
+// GET 方法：触发采集（测试用）
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = getSupabase()
+    
+    // 检查数据库表是否存在
+    const { data, error } = await supabase
+      .from('industry_news')
+      .select('id')
+      .limit(1)
+
+    if (error) {
+      return NextResponse.json({
+        success: false,
+        error: 'industry_news 表可能不存在',
+        details: error.message,
+        instructions: '请在 Supabase 中运行 industry-news-table.sql 创建表'
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: '行业新闻API正常',
+      tableExists: true,
+      endpoints: {
+        'POST /api/crawl/industry': '触发行业新闻采集',
+        'GET /api/industry-news': '获取行业新闻列表',
+        'POST /api/industry-news': '手动添加行业新闻'
+      }
+    })
+
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      error: 'API检查失败',
+      details: error.message
+    }, { status: 500 })
+  }
+}

@@ -40,3 +40,29 @@ export interface DashboardStats {
   negativeCount: number;
   recentSentiments: Sentiment[];
 }
+
+// 行业新闻类型
+export interface IndustryNews {
+  id: string;
+  title: string;
+  content: string;
+  source: string;
+  source_url: string;
+  category: 'technology' | 'product' | 'policy' | 'funding' | 'partnership' | 'other';
+  keywords: string[];
+  sentiment: 'positive' | 'neutral' | 'negative';
+  importance: 'high' | 'medium' | 'low';
+  published_at: Date;
+  created_at: Date;
+}
+
+// 行业新闻查询参数
+export interface IndustryNewsQuery {
+  category?: string;
+  sentiment?: string;
+  importance?: string;
+  start_date?: string;
+  end_date?: string;
+  limit?: number;
+  offset?: number;
+}
