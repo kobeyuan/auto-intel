@@ -103,7 +103,15 @@ export default function Home() {
     ? products
     : products.filter(p => p.category === selectedCategory)
 
+  console.log('渲染状态:')
+  console.log('- loading:', loading)
+  console.log('- stats:', stats)
+  console.log('- products length:', products.length)
+  console.log('- filteredProducts length:', filteredProducts.length)
+
+  // 强制显示数据，即使 stats 为 null
   if (loading) {
+    console.log('显示加载中...')
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-500">加载中...</div>
@@ -111,6 +119,22 @@ export default function Home() {
     )
   }
 
+  // 如果 stats 为 null，显示调试信息
+  if (!stats) {
+    console.log('stats 为 null，显示调试信息')
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-500">
+          <p>stats 为 null，请检查 Console 日志</p>
+          <p>products: {products.length}</p>
+          <p>loading: {loading.toString()}</p>
+        </div>
+      </div>
+    )
+  }
+
+  console.log('开始渲染页面')
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
@@ -134,17 +158,17 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats Cards */}
+        {console.log('检查 stats 条件:', stats, 'stats && 结果:', stats && true)}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">产品总数</p>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white">{stats.totalProducts}</p>
-                </div>
-                <Car className="w-12 h-12 text-blue-600" />
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">产品总数</p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white">{stats.totalProducts}</p>
               </div>
+              <Car className="w-12 h-12 text-blue-600" />
             </div>
+          </div>
 
             <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
               <div className="flex items-center justify-between">
