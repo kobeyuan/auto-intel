@@ -209,11 +209,11 @@ export const INDUSTRY_SOURCES = [
   '盖世汽车', '第一电动网', '电动汽车观察家'
 ]
 
-// 搜索行业新闻
+// 搜索行业新闻（优化版）
 export async function searchIndustryNews(
   category: keyof typeof INDUSTRY_KEYWORDS = 'technology',
   maxResults: number = 10,
-  freshness: string = 'pd' // past day
+  freshness: string = 'pm' // past month 改为过去一个月，增加结果
 ): Promise<SearchResult[]> {
   if (!BRAVE_API_KEY) {
     console.error('BRAVE_API_KEY not configured')
@@ -221,17 +221,20 @@ export async function searchIndustryNews(
   }
 
   try {
-    // 从该类别中随机选择关键词
+    // 从该类别中选择关键词（不再随机，使用固定关键词提高命中率）
     const keywords = INDUSTRY_KEYWORDS[category]
-    const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)]
+    // 使用更通用的关键词
+    const keyword = category === 'technology' ? '自动驾驶' :
+                   category === 'product' ? '智能座舱' :
+                   category === 'policy' ? '智能网联汽车政策' :
+                   '智能汽车'
     
-    // 构建查询，包含来源限制
-    const sourceQuery = INDUSTRY_SOURCES.map(s => `site:${s}.com`).join(' OR ')
-    const query = `${randomKeyword} (${sourceQuery})`
+    // 放宽来源限制，不限制特定网站
+    const query = `${keyword} 新闻 最新`
     
     const url = `${BRAVE_API_URL}?q=${encodeURIComponent(query)}&count=${maxResults}&fresh=${freshness}`
 
-    console.log(`搜索行业新闻: ${query}`)
+    console.log(`搜索行业新闻 [${category}]: ${query}`)
 
     const response = await fetch(url, {
       headers: {
@@ -242,7 +245,8 @@ export async function searchIndustryNews(
     })
 
     if (!response.ok) {
-      throw new Error(`Brave API error: ${response.status}`)
+      console.error(`Brave API 错误: ${response.status}`, await response.text())
+      return []
     }
 
     const data: BraveSearchResult = await response.json()
@@ -254,8 +258,22 @@ export async function searchIndustryNews(
       publishedAt: new Date().toISOString()
     })) || []
 
-    console.log(`找到 ${results.length} 条行业新闻`)
-    return results
+    console.log(`找到 ${results.length} 条行业新闻 [${category}]`)
+    
+    // 过滤掉明显不相关的结果
+    const filteredResults = results.filter(result => {
+      const title = result.title.toLowerCase()
+      const snippet = result.snippet.toLowerCase()
+      
+      // 检查是否包含相关关键词
+      const relevantKeywords = ['自动驾驶', '智能驾驶', '智能座舱', '车联网', '汽车', '特斯拉', '华为', '比亚迪', '小鹏', '蔚来']
+      return relevantKeywords.some(keyword => 
+        title.includes(keyword) || snippet.includes(keyword)
+      )
+    })
+    
+    console.log(`过滤后剩余 ${filteredResults.length} 条相关新闻`)
+    return filteredResults
 
   } catch (error) {
     console.error('行业新闻搜索错误:', error)

@@ -11,12 +11,26 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase()
     const body = await request.json()
     const maxResultsPerCategory = body.maxResults || 3
+    const debugMode = body.debug || false
 
     console.log('开始采集行业新闻...')
+    console.log('Brave API Key 配置:', process.env.BRAVE_API_KEY ? '已配置' : '未配置')
 
     // 搜索所有类别的行业新闻
     const industryResults = await searchAllIndustryNews(maxResultsPerCategory)
-    console.log('搜索结果:', Object.keys(industryResults).map(k => `${k}: ${industryResults[k].length}`))
+    
+    if (debugMode) {
+      console.log('详细搜索结果:')
+      for (const [category, results] of Object.entries(industryResults)) {
+        console.log(`  ${category}: ${results.length} 条结果`)
+        results.forEach((r, i) => {
+          console.log(`    ${i+1}. ${r.title}`)
+          console.log(`       URL: ${r.url}`)
+        })
+      }
+    } else {
+      console.log('搜索结果:', Object.keys(industryResults).map(k => `${k}: ${industryResults[k].length}`))
+    }
 
     let totalAdded = 0
     let totalSkipped = 0
