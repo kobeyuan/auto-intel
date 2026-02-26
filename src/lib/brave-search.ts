@@ -296,7 +296,7 @@ export async function searchIndustryNews(
       }
       
       // 检查是否包含中文（基本过滤）
-      const hasChinese = /[\\u4e00-\\u9fa5]/.test(title)
+      const hasChinese = /[\u4e00-\u9fa5]/.test(title)
       return hasChinese
     })
     
@@ -307,7 +307,7 @@ export async function searchIndustryNews(
       console.log('结果太少，尝试放宽过滤条件...')
       // 只保留中文结果，不进行关键词过滤
       const chineseResults = results.filter(result => 
-        /[\\u4e00-\\u9fa5]/.test(result.title)
+        /[\u4e00-\u9fa5]/.test(result.title)
       )
       console.log(`放宽后得到 ${chineseResults.length} 条中文结果`)
       return chineseResults.slice(0, maxResults)
