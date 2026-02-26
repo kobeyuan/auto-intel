@@ -19,9 +19,10 @@ export async function POST(request: NextRequest) {
     console.log('测试模式:', testMode)
 
     // 如果是测试模式，直接测试 Brave API
-    if (testMode) {
+    if (testMode || body.testSearch) {
       const testQuery = body.query || '自动驾驶'
       const testCount = body.count || 3
+      const testCategory = body.category || 'technology'
       
       console.log(`测试模式: 搜索 "${testQuery}"，数量 ${testCount}`)
       
@@ -49,6 +50,27 @@ export async function POST(request: NextRequest) {
       const results = data.web?.results || []
       
       console.log(`Brave API 返回 ${results.length} 条结果`)
+      
+      // 如果是搜索函数测试，也测试 searchIndustryNews 函数
+      if (body.testSearch) {
+        const { searchIndustryNews } = await import('@/lib/brave-search')
+        const searchResults = await searchIndustryNews(testCategory as any, testCount)
+        
+        return NextResponse.json({
+          success: true,
+          message: '搜索函数测试完成',
+          category: testCategory,
+          searchQuery: testQuery,
+          braveApiResults: {
+            count: results.length,
+            sample: results.slice(0, 3).map((r: any) => r.title)
+          },
+          searchFunctionResults: {
+            count: searchResults.length,
+            rawResults: searchResults
+          }
+        })
+      }
       
       // 返回原始数据用于调试
       return NextResponse.json({
