@@ -247,6 +247,7 @@ export async function searchIndustryNews(
     const url = `${BRAVE_API_URL}?q=${encodeURIComponent(query)}&count=${maxResults}&fresh=${freshness}&search_lang=${searchLang}&country=CN`
 
     console.log(`搜索行业新闻 [${category}]: ${query}`)
+    console.log(`请求URL: ${url}`)
 
     const response = await fetch(url, {
       headers: {

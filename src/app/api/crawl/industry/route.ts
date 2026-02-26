@@ -88,6 +88,20 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // 如果是调试查询模式
+    if (body.debugQuery) {
+      const { searchIndustryNews } = await import('@/lib/brave-search')
+      const testResult = await searchIndustryNews((body.category || 'technology') as any, 2)
+      
+      return NextResponse.json({
+        success: true,
+        message: '查询调试完成',
+        category: body.category || 'technology',
+        resultsCount: testResult.length,
+        results: testResult
+      })
+    }
+
     // 正常模式：搜索所有类别的行业新闻
     const industryResults = await searchAllIndustryNews(maxResultsPerCategory)
     
