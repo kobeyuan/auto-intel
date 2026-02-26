@@ -164,12 +164,62 @@ function mapCategory(category: string): 'technology' | 'product' | 'policy' | 'f
   return categoryMap[category] || 'other'
 }
 
-// GET 方法：触发采集（测试用）
+// GET 方法：测试和诊断
 export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabase()
+    const searchParams = request.nextUrl.searchParams
+    const testType = searchParams.get('test')
     
-    // 检查数据库表是否存在
+    // 测试环境变量
+    if (testType === 'env') {
+      return NextResponse.json({
+        success: true,
+        braveApiKey: process.env.BRAVE_API_KEY ? '已配置' : '未配置',
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? '已配置' : '未配置',
+        nodeEnv: process.env.NODE_ENV
+      })
+    }
+    
+    // 测试 Brave API
+    if (testType === 'brave') {
+      try {
+        const testQuery = '自动驾驶'
+        const testUrl = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(testQuery)}&count=2`
+        
+        const response = await fetch(testUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Subscription-Token': process.env.BRAVE_API_KEY || ''
+          }
+        })
+        
+        if (!response.ok) {
+          return NextResponse.json({
+            success: false,
+            error: `Brave API 错误: ${response.status}`,
+            status: response.status
+          })
+        }
+        
+        const data = await response.json()
+        return NextResponse.json({
+          success: true,
+          message: 'Brave API 连接正常',
+          resultsCount: data.web?.results?.length || 0,
+          sampleResults: data.web?.results?.slice(0, 2) || []
+        })
+        
+      } catch (error: any) {
+        return NextResponse.json({
+          success: false,
+          error: 'Brave API 测试失败',
+          details: error.message
+        })
+      }
+    }
+    
+    // 默认：检查数据库表是否存在
     const { data, error } = await supabase
       .from('industry_news')
       .select('id')
@@ -192,6 +242,10 @@ export async function GET(request: NextRequest) {
         'POST /api/crawl/industry': '触发行业新闻采集',
         'GET /api/industry-news': '获取行业新闻列表',
         'POST /api/industry-news': '手动添加行业新闻'
+      },
+      testEndpoints: {
+        'GET /api/crawl/industry?test=env': '测试环境变量',
+        'GET /api/crawl/industry?test=brave': '测试 Brave API'
       }
     })
 
