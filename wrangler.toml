@@ -4,10 +4,5 @@ name = "auto-intel"
 compatibility_date = "2024-02-26"
 
 [env.production]
-vars = {
-  NEXT_PUBLIC_SUPABASE_URL = "https://eotyzutqjsowbexabzms.supabase.co",
-  BRAVE_API_KEY = "BSAJodIqkC38RnlMhH7d_b67JTIfTLV"
-}
-
-[env.production.secrets]
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvdHl6dXRxanNvd2JleGFiem1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMTI4MzMsImV4cCI6MjA4NzU4ODgzM30.G2fRupJf4J9tD77-il1eudBck21V_hK3lnLzVjXp--Q"
+NEXT_PUBLIC_SUPABASE_URL = "https://eotyzutqjsowbexabzms.supabase.co"
+BRAVE_API_KEY = "BSAJodIqkC38RnlMhH7d_b67JTIfTLV"
