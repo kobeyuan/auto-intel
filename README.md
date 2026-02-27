@@ -4,12 +4,29 @@
 
 ## 功能特性
 
+### 核心功能
+
 - 📊 **产品管理**：管理智能驾驶和智能座舱产品信息
-- 📈 **舆情监控**：基于 Brave Search 自动采集舆情数据
+- 📰 **行业情报**：实时监控智能驾驶和智能座舱行业动态
+- 🔍 **舆情监控**：基于 Brave Search 自动采集舆情数据
+- 🎛️ **传感器技术**：跟踪激光雷达、毫米波雷达等传感器技术
+- 📡 **OTA更新**：监控各车企最新OTA版本和功能
 - 🤖 **情感分析**：AI 驱动的舆情情感分析
 - 🔔 **消息推送**：集成飞书机器人，实时推送重要舆情
 - 📱 **响应式设计**：支持桌面和移动端访问
-- 🚀 **外网访问**：部署到 Vercel，全球可用
+- 🎨 **科幻风格**：酷炫的科技感界面设计
+
+### 数据特点
+
+- ✅ **真实数据**：所有新闻来自真实官网和权威媒体
+- ✅ **时效性**：自动过滤，只显示最近3个月的数据
+- ✅ **多来源**：华为、小米、理想、小鹏、蔚来、工信部等
+- ✅ **可追溯**：每条数据包含真实来源URL，可点击查看原文
+
+### 双核心领域
+
+- 🚗 **智能驾驶**：自动驾驶、城市NOA、传感器、芯片等
+- 📱 **智能座舱**：车机系统、语音交互、AR-HUD、生态等
 
 ## 技术栈
 
@@ -19,7 +36,7 @@
 - **搜索**：Brave Search API
 - **爬虫**：自定义爬虫框架
 - **AI分析**：GLM / DeepSeek 模型
-- **部署**：Vercel（免费计划）
+- **部署**：Vercel + Cloudflare Pages
 
 ## 快速开始
 
@@ -69,7 +86,22 @@ npm run dev
 
 访问 http://localhost:3000
 
-### 5. 部署到 Vercel
+### 部署地址
+
+- **Cloudflare Pages**（推荐，国内快速访问）：https://auto-intel.pages.dev
+- **Vercel**（全球访问）：https://auto-intel-0226.vercel.app
+
+### 5. 部署到 Cloudflare Pages（推荐，国内可访问）
+
+详细步骤见 [Cloudflare 部署指南](docs/CLOUDFLARE_DEPLOY.md)
+
+简要步骤：
+1. 安装 wrangler CLI：`npm install -g wrangler`
+2. 登录 Cloudflare：`wrangler login`
+3. 运行部署脚本：`bash scripts/deploy-cloudflare.sh`
+4. 访问：https://auto-intel.pages.dev
+
+### 6. 部署到 Vercel（全球访问）
 
 详细步骤见 [Vercel 部署指南](docs/VERCEL_DEPLOYMENT.md)
 
@@ -99,9 +131,23 @@ src/
 ├── data/            # 数据和初始化脚本
 │   └── init.ts      # 数据库初始化 SQL
 └── docs/            # 文档
-    ├── SUPABASE_SETUP.md
-    └── VERCEL_DEPLOYMENT.md
+    ├── SUPABASE_SETUP.md      # Supabase配置指南
+    ├── VERCEL_DEPLOYMENT.md   # Vercel部署指南
+    ├── CLOUDFLARE_DEPLOY.md   # Cloudflare部署指南（推荐）
+    ├── PUBLIC_ACCESS_GUIDE.md # 公网访问解决方案
+    └── REAL_DATA_GUIDE.md    # 真实数据指南
 ```
+
+## 部署说明
+
+### 推荐部署方案
+
+| 方案 | 国内访问 | 成本 | 推荐度 |
+|------|---------|------|--------|
+| Cloudflare Pages | 快 | 免费 | ⭐⭐⭐⭐⭐ |
+| Vercel + Cloudflare CDN | 快 | 免费 | ⭐⭐⭐⭐ |
+| Vercel | 慢/受限 | 免费 | ⭐⭐ |
+| 阿里云/腾讯云 | 最快 | 低（~50元/月） | ⭐⭐⭐ |
 
 ## API 接口
 
@@ -175,18 +221,28 @@ curl -X POST http://localhost:3000/api/crawl
 
 ### 免费资源
 
-| 服务 | 免费额度 |
-|------|---------|
-| Vercel | 100GB 带宽/月，无限部署 |
-| Supabase | 500MB 数据库，1GB 存储 |
-| Brave Search | 免费计划可用 |
+| 服务 | 免费额度 | 说明 |
+|------|---------|------|
+| Cloudflare Pages | 完全免费 | 全球CDN，无限带宽 |
+| Vercel | 100GB 带宽/月 | 无限部署 |
+| Supabase | 500MB 数据库 | 1GB 存储 |
+| Brave Search | 免费计划可用 | 2000次请求/月 |
 
 对于个人和小团队项目，完全免费使用。
+
+### 付费选项（可选）
+
+- Cloudflare Pages Pro：$20/月（更多构建次数）
+- Vercel Pro：$20/月（更多带宽和功能）
+- Supabase Pro：$25/月（8GB数据库，50GB存储）
 
 ## 文档
 
 - [Supabase 配置指南](docs/SUPABASE_SETUP.md)
 - [Vercel 部署指南](docs/VERCEL_DEPLOYMENT.md)
+- [Cloudflare 部署指南](docs/CLOUDFLARE_DEPLOY.md) ⭐ 推荐
+- [公网访问解决方案](docs/PUBLIC_ACCESS_GUIDE.md)
+- [真实数据指南](docs/REAL_DATA_GUIDE.md)
 
 ## 许可证
 
