@@ -261,7 +261,7 @@ export default function Home() {
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold gradient-text">智能驾驶情报洞察平台</h1>
+                <h1 className="text-2xl font-bold gradient-text">规划部智能化情报洞察平台</h1>
                 <p className="text-xs text-gray-500">Auto Intelligence Platform v2.0</p>
               </div>
             </div>

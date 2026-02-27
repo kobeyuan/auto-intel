@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "智能驾驶情报洞察平台",
+  title: "规划部智能化情报洞察平台",
   description: "智能驾驶和智能座舱产品舆情监控与分析",
 };
 
