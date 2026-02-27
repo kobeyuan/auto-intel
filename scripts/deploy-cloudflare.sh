@@ -36,7 +36,7 @@ echo ""
 echo "🌐 部署到 Cloudflare Pages..."
 wrangler pages project create auto-intel --production-branch=main 2>/dev/null || true
 
-wrangler pages deploy .vercel/output/static \
+wrangler pages deploy out \
   --project-name=auto-intel \
   --commit-hash=$(git rev-parse --short HEAD) \
   --commit-message="Deploy to Cloudflare Pages"

@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { Brain, TrendingUp, TrendingDown, Minus, Activity, Zap, Cpu, Rocket, RefreshCw, ExternalLink, Calendar, AlertCircle, Radar, Monitor } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+
+// 客户端 Supabase 实例
+const supabase = createClient(
+  'https://eotyzutqjsowbexabzms.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvdHl6dXRxanNvd2JleGFiem1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMTI4MzMsImV4cCI6MjA4NzU4ODgzM30.G2fRupJf4J9tD77-il1eudBck21V_hK3lnLzVjXp--Q'
+)
 
 export default function Home() {
   const [sentiments, setSentiments] = useState<any[]>([])
@@ -18,17 +25,29 @@ export default function Home() {
     try {
       setLoading(true)
 
-      // 加载舆情数据
-      const [sentimentsResponse, newsResponse] = await Promise.all([
-        fetch('/api/sentiments'),
-        fetch('/api/industry-news?limit=50')
+      // 直接从 Supabase 获取数据（不使用 API 路由）
+      const [sentimentsResult, newsResult] = await Promise.all([
+        supabase
+          .from('sentiments')
+          .select('*')
+          .order('published_at', { ascending: false }),
+        supabase
+          .from('industry_news')
+          .select('*')
+          .order('published_at', { ascending: false })
+          .limit(50)
       ])
 
-      const sentimentsResult = await sentimentsResponse.json()
-      const newsResult = await newsResponse.json()
+      if (sentimentsResult.error) {
+        console.error('Error loading sentiments:', sentimentsResult.error)
+      }
 
-      setSentiments(sentimentsResult.sentiments || [])
-      setIndustryNews(newsResult.success ? (newsResult.data || []) : [])
+      if (newsResult.error) {
+        console.error('Error loading news:', newsResult.error)
+      }
+
+      setSentiments(sentimentsResult.data || [])
+      setIndustryNews(newsResult.data || [])
       setLastUpdate(new Date().toLocaleString('zh-CN'))
     } catch (error) {
       console.error('Error loading data:', error)
@@ -398,7 +417,7 @@ export default function Home() {
                     </div>
                   )}
 
-                  {insight.source_url && (
+                  {insight.source_url && insight.source_url && !insight.source_url.includes('example') && (
                     <a
                       href={insight.source_url}
                       target="_blank"
@@ -471,7 +490,7 @@ export default function Home() {
 
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">{sensor.source}</span>
-                    {sensor.source_url && (
+                    {sensor.source_url && sensor.source_url && !sensor.source_url.includes('example') && (
                       <a
                         href={sensor.source_url}
                         target="_blank"
@@ -543,7 +562,7 @@ export default function Home() {
                         <span className="text-gray-600">{update.source}</span>
                       </div>
                     </div>
-                    {update.link && (
+                    {update.link && update.link && !update.link.includes('example') && (
                       <div className="mt-2">
                         <a
                           href={update.link}
@@ -633,7 +652,7 @@ export default function Home() {
 
         {/* 底部信息 */}
         <div className="mt-8 text-center text-sm text-gray-600">
-          <p>🎋 智能驾驶情报洞察平台 | 真实数据来源: Supabase数据库 + Brave Search | 仅显示最近3个月信息</p>
+          <p>🎋 智能驾驶情报洞察平台 | 真实数据来源: Supabase数据库 | 仅显示最近3个月信息</p>
         </div>
       </main>
     </div>
