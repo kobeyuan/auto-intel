@@ -11,9 +11,7 @@ export default function Home() {
 
   useEffect(() => {
     loadData()
-    // 每5分钟自动刷新
-    const interval = setInterval(loadData, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    // 定时刷新已取消 - 用户手动点击"刷新数据"按钮刷新
   }, [])
 
   const loadData = async () => {
