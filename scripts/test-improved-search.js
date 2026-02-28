@@ -2,10 +2,12 @@
 
 require('dotenv').config({ path: '.env.local' })
 
-const { searchIndustryNewsImproved, testSearch } = require('../src/lib/improved-search')
-
+// 注意：由于这是 CommonJS 环境，我们需要使用动态导入
 async function main() {
   console.log('🧪 测试改进版搜索机制\n')
+  
+  // 动态导入 ES 模块
+  const { searchIndustryNewsImproved } = await import('../src/lib/improved-search.js')
   
   // 测试配置
   const testCases = [
@@ -29,12 +31,16 @@ async function main() {
       
       console.log(`✅ 收到 ${results.length} 条结果`)
       
-      for (const result of results) {
-        console.log(`\n📰 ${result.title}`)
-        console.log(`   🔗 ${result.url}`)
-        console.log(`   📅 ${new Date(result.publishedAt).toLocaleDateString('zh-CN')}`)
-        console.log(`   📍 ${result.source}`)
-        console.log(`   📝 ${result.snippet.substring(0, 100)}...`)
+      if (results.length > 0) {
+        for (const result of results.slice(0, 2)) { // 只显示前2条
+          console.log(`\n📰 ${result.title}`)
+          console.log(`   🔗 ${result.url}`)
+          console.log(`   📅 ${new Date(result.publishedAt).toLocaleDateString('zh-CN')}`)
+          console.log(`   📍 ${result.source}`)
+          console.log(`   📝 ${result.snippet.substring(0, 100)}...`)
+        }
+      } else {
+        console.log('⚠️  没有收到结果')
       }
       
     } catch (error) {
