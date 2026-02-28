@@ -1,9 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  'https://eotyzutqjsowbexabzms.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvdHl6dXRxanNvd2JleGFiem1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMTI4MzMsImV4cCI6MjA4NzU4ODgzM30.G2fRupJf4J9tD77-il1eudBck21V_hK3lnLzVjXp--Q'
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://eotyzutqjsowbexabzms.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // 真实的行业新闻数据（基于2025年2月的真实事件）
 const realNews = [
