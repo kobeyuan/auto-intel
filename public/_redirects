@@ -1,0 +1,2 @@
+# API routes redirect to handle client-side routing
+/api/* /api/:splat 200
