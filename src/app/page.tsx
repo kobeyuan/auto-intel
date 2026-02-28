@@ -14,6 +14,7 @@ export default function Home() {
   const [sentiments, setSentiments] = useState<any[]>([])
   const [industryNews, setIndustryNews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [crawling, setCrawling] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string>('')
 
   useEffect(() => {
@@ -56,7 +57,50 @@ export default function Home() {
     }
   }
 
-  const getSentimentIcon = (sentiment: string) => {
+  
+
+    const triggerCrawl = async () => {
+    try {
+      setCrawling(true)
+      console.log('🚀 触发数据采集...')
+      
+      // 调用爬虫 API
+      const response = await fetch('/api/crawl', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'all',
+          debug: false
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ 数据采集成功:', result.message)
+        
+        // 等待 2 秒让数据入库
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        // 重新加载数据
+        await loadData()
+        
+        // 显示成功消息
+        alert('数据采集成功！已更新最新情报。')
+      } else {
+        console.error('❌ 数据采集失败:', result.error)
+        alert('数据采集失败: ' + (result.error || '未知错误'))
+      }
+    } catch (error) {
+      console.error('❌ 数据采集异常:', error)
+      alert('数据采集异常，请检查控制台')
+    } finally {
+      setCrawling(false)
+    }
+  }
+const getSentimentIcon = (sentiment: string) => {
     switch (sentiment) {
       case 'positive':
         return <TrendingUp className="w-5 h-5 text-green-400" />
@@ -273,11 +317,20 @@ export default function Home() {
                 </div>
               )}
               <button
-                onClick={loadData}
+                onClick={triggerCrawl}
                 className="neon-button flex items-center gap-2"
               >
-                <RefreshCw className="w-4 h-4" />
-                刷新数据
+                {crawling ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  采集中...
+                </div>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  刷新数据
+                </>
+              )}
               </button>
             </div>
           </div>
