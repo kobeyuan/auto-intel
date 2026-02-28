@@ -5,16 +5,27 @@ import { Brain, TrendingUp, TrendingDown, Minus, Activity, Zap, Cpu, Rocket, Ref
 import { createClient } from '@supabase/supabase-js'
 
 // 客户端 Supabase 实例
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+
 
 export default function Home() {
   const [sentiments, setSentiments] = useState<any[]>([])
   const [industryNews, setIndustryNews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [crawling, setCrawling] = useState(false)
+  
+  // 只在客户端初始化 Supabase 客户端
+  const [supabase, setSupabase] = useState<any>(null)
+  
+  useEffect(() => {
+    // 确保在客户端才初始化
+    if (typeof window !== 'undefined') {
+      const client = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      )
+      setSupabase(client)
+    }
+  }, [])
   const [lastUpdate, setLastUpdate] = useState<string>('')
 
   useEffect(() => {
@@ -25,6 +36,12 @@ export default function Home() {
   const loadData = async () => {
     try {
       setLoading(true)
+      
+      if (!supabase) {
+        console.error('Supabase client not initialized')
+        setLoading(false)
+        return
+      }
 
       // 直接从 Supabase 获取数据（不使用 API 路由）
       const [sentimentsResult, newsResult] = await Promise.all([
@@ -62,6 +79,13 @@ export default function Home() {
     const triggerCrawl = async () => {
     try {
       setCrawling(true)
+      
+      if (!supabase) {
+        console.error('Supabase client not initialized')
+        alert('客户端未初始化，请刷新页面')
+        setCrawling(false)
+        return
+      }
       console.log('🚀 触发数据采集...')
       
       // 调用爬虫 API
