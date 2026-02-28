@@ -493,12 +493,3 @@ export function analyzeImportanceImproved(
     return { importance: 'low', reasons: ['常规新闻'] }
   }
 }
-
-// 测试函数
-export async function testSearch() {
-  console.log('🧪 测试改进版搜索机制...\n')
-  
-  const categories = ['technology', 'product', 'policy', 'company', 'sensor', 'ota']
-  
-  for (const category of categories) {
-    console.log(`\n📋 测试

@@ -16,10 +16,13 @@ export async function POST(request: NextRequest) {
     })
     
     return NextResponse.json({
-      success: true,
-      message: '行业新闻采集完成',
+      success: result.success,
+      message: result.message || '行业新闻采集完成',
       timestamp: new Date().toISOString(),
-      ...result
+      summary: result.summary,
+      addedNews: result.addedNews,
+      error: result.error,
+      details: result.details
     })
     
   } catch (error) {
