@@ -8,3 +8,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // 兼容旧版 API 路由的调用方式
 export const getSupabase = () => supabase;
+
+// 强制触发重新构建 v2
