@@ -21,7 +21,9 @@ export default function Home() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       if (!supabaseUrl || !supabaseAnonKey) {
-        setError('Supabase 配置缺失')
+        //setError('Supabase 配置缺失')
+        // 修改这一行，看看公网上到底拿到了什么（哪怕是空字符串也要看清）
+setError(`配置缺失详情: URL=[${process.env.NEXT_PUBLIC_SUPABASE_URL || '空'}], KEY=[${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '已拿到' : '空'}]`)
         return
       }
       const client = createClient(supabaseUrl, supabaseAnonKey)
