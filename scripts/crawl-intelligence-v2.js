@@ -342,79 +342,126 @@ async function crawlOTA() {
   return results;
 }
 
+// 验证URL是否有效
+function isValidUrl(url) {
+  if (!url || url === '') return false;
+  if (url.includes('example.com')) return false;
+  if (url.includes('localhost')) return false;
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // 保存到数据库
 async function saveToDatabase(items) {
   const client = getSupabase();
   if (!client) {
     console.log('\n⚠️  Supabase 未配置，跳过数据库保存');
+    console.log('   请在 .env 中配置 SUPABASE_SERVICE_ROLE_KEY');
     return { saved: 0, errors: [] };
   }
 
   console.log('\n💾 保存到数据库...');
   let saved = 0;
+  let updated = 0;
   const errors = [];
 
   for (const item of items) {
     try {
+      // 验证URL有效性
+      const url = item.url || item.source_url;
+      if (!isValidUrl(url)) {
+        console.log(`   ⚠️  跳过无效URL: ${item.title.substring(0, 30)}...`);
+        continue;
+      }
+
       // 构建数据库记录
       const record = {
         title: item.title,
-        content: item.snippet,
+        content: item.snippet || item.content,
         summary: item.summary,
         source: item.source,
-        source_url: item.url,
-        source_credibility: item.sourceCredibility || 'tier2',
-        publish_time: item.publishedAt,
+        source_url: url,
+        source_credibility: item.sourceCredibility || getSourceCredibility(item.source),
+        publish_time: item.publishedAt || new Date().toISOString(),
         category: item.category || 'sensor',
-        sentiment: item.sentiment,
-        sentiment_score: item.sentimentScore,
-        importance: item.importance,
-        importance_score: item.importanceScore,
-        key_insights: item.keyInsights,
+        sentiment: item.sentiment || 'neutral',
+        sentiment_score: item.sentimentScore || 0.5,
+        importance: item.importance || 'medium',
+        importance_score: item.importanceScore || 0.5,
+        key_insights: item.keyInsights || [],
         industry_impact: item.industryImpact,
         tech_innovation: item.techInnovation,
         market_trend: item.marketTrend,
         competitive_dynamics: item.competitiveDynamics,
-        related_companies: item.relatedCompanies,
-        related_technologies: item.relatedTechnologies,
-        related_products: item.relatedProducts,
-        time_sensitivity: item.timeSensitivity,
-        ai_analyzed: item.aiAnalyzed || false,
-        ai_provider: item.aiProvider,
-        confidence: item.confidence
+        related_companies: item.relatedCompanies || [],
+        related_technologies: item.relatedTechnologies || [],
+        related_products: item.relatedProducts || [],
+        time_sensitivity: item.timeSensitivity || 'normal',
+        ai_analyzed: true,
+        ai_provider: 'gemini',
+        confidence: item.confidence || 0.7,
+        updated_at: new Date().toISOString()
       };
 
-      // 使用 upsert 避免重复
-      const { error } = await client
+      // 先检查是否已存在相同URL的数据
+      const { data: existing } = await client
         .from('industry_intelligence')
-        .upsert(record, {
-          onConflict: 'source_url',
-          ignoreDuplicates: false
-        });
+        .select('id, source_url')
+        .eq('source_url', url)
+        .single();
 
-      if (error) {
-        // 可能是表不存在，尝试直接插入
-        if (error.message?.includes('does not exist')) {
-          console.log('   ⚠️  表可能不存在，请先运行迁移');
-          errors.push({ title: item.title, error: '表不存在' });
-        } else {
+      if (existing) {
+        // 更新现有记录
+        const { error } = await client
+          .from('industry_intelligence')
+          .update(record)
+          .eq('id', existing.id);
+
+        if (error) {
           errors.push({ title: item.title, error: error.message });
+        } else {
+          updated++;
+          console.log(`   ↻ ${item.title.substring(0, 40)}...`);
         }
       } else {
-        saved++;
-        console.log(`   ✓ ${item.title.substring(0, 40)}...`);
+        // 插入新记录
+        const { error } = await client
+          .from('industry_intelligence')
+          .insert(record);
+
+        if (error) {
+          if (error.message?.includes('does not exist')) {
+            console.log('   ⚠️  表不存在，请先执行数据库迁移');
+            console.log('   运行: npm run db:migrate');
+            return { saved, errors: ['表不存在'] };
+          }
+          errors.push({ title: item.title, error: error.message });
+        } else {
+          saved++;
+          console.log(`   ✓ ${item.title.substring(0, 40)}...`);
+        }
       }
     } catch (err) {
       errors.push({ title: item.title, error: err.message });
     }
   }
 
-  console.log(`\n   保存成功: ${saved}/${items.length}`);
-  if (errors.length > 0) {
-    console.log(`   失败: ${errors.length} 条`);
-  }
+  console.log(`\n   新增: ${saved} | 更新: ${updated} | 失败: ${errors.length}`);
+  return { saved: saved + updated, errors };
+}
 
-  return { saved, errors };
+// 根据来源判断可信度
+function getSourceCredibility(source) {
+  const official = ['华为官网', '小鹏官网', '蔚来官网', '理想官网', '官方公告', '工信部', '新华网'];
+  const tier1 = ['36氪', '财新', '第一财经', '界面', '澎湃', '人民网'];
+
+  if (official.some(s => source?.includes(s))) return 'official';
+  if (tier1.some(s => source?.includes(s))) return 'tier1';
+  return 'tier2';
 }
 
 // 生成行业周报

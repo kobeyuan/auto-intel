@@ -17,7 +17,9 @@
     "intel:sensor": "node scripts/crawl-intelligence-v2.js --category=sensor",
     "intel:ota": "node scripts/crawl-intelligence-v2.js --category=ota",
     "db:migrate": "node scripts/db-migrate-v2.js",
-    "db:save": "node scripts/crawl-intelligence-v2.js --save"
+    "db:save": "node scripts/crawl-intelligence-v2.js --save",
+    "db:fix-urls": "node scripts/fix-source-urls.js",
+    "db:clean-mock": "node scripts/fix-source-urls.js --delete"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
