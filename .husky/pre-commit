@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔒 运行安全预提交检查..."
+node scripts/security-check.js
