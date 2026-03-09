@@ -12,6 +12,11 @@ from typing import List, Dict, Any
 # 强制加载项目根目录下的 .env 文件
 load_dotenv()
 
+# 获取当前年份和季度（用于动态搜索词生成）
+CURRENT_YEAR = datetime.now().year
+CURRENT_QUARTER = (datetime.now().month - 1) // 3 + 1
+NEXT_YEAR = CURRENT_YEAR + 1
+
 # 配置环境变量
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
@@ -71,42 +76,65 @@ STRATEGIC_KEYWORDS = [
 
 def generate_search_matrix() -> List[Dict[str, Any]]:
     """
-    生成多维查询矩阵
+    生成多维查询矩阵（动态年份，增强实时性）
     返回: [{"query": "搜索词", "category": "分类", "dimension": "维度"}]
     """
     queries = []
 
-    # 核心类别定义
+    # 动态年份
+    current_year = CURRENT_YEAR
+    next_year = NEXT_YEAR
+
+    # 核心类别定义（基础关键词，不含年份和修饰词）
     categories = {
-        "smart-cockpit": ["智能座舱", "智能座舱 2026", "座舱芯片", "座舱操作系统"],
+        "smart-cockpit": ["智能座舱", "智能座舱系统", "座舱芯片", "座舱操作系统"],
         "autonomous-driving": ["智能驾驶", "自动驾驶", "智驾方案", "ADAS"],
         "sensors": ["激光雷达", "毫米波雷达", "视觉传感器", "车载芯片"],
         "ota": ["OTA升级", "固件更新", "汽车软件更新"],
-        "sentiment": ["智驾评价", "自动驾驶吐槽", "智能驾驶体验"],
+        "sentiment": ["智驾评价", "自动驾驶体验", "智能驾驶口碑"],
     }
 
-    # 基础查询
+    # 基础查询（使用动态年份）
     for category, base_terms in categories.items():
         for term in base_terms:
+            # 移除"2026"固定年份，使用更灵活的搜索词
             queries.append({
-                "query": f"2026 {term} 行业趋势",
+                "query": f"{term} 最新 行业趋势",
                 "category": category,
                 "dimension": "基础趋势"
             })
+            # 添加实时性搜索词
+            queries.append({
+                "query": f"{term} 最新发布",
+                "category": category,
+                "dimension": "最新动态"
+            })
 
-    # 竞争对手 x 核心技术 交叉查询 (高价值)
+    # 实时热点查询（高优先级）
+    realtime_keywords = [
+        "今日", "刚刚", "最新", "发布", "官宣", "重磅",
+        "突破", "首发", "率先", "领先"
+    ]
+    for keyword in realtime_keywords:
+        queries.append({
+            "query": f"智能驾驶 {keyword}",
+            "category": "autonomous-driving",
+            "dimension": "实时热点"
+        })
+
+    # 竞争对手 x 核心技术 交叉查询（使用动态年份）
     for comp_name, comp_terms in COMPETITORS.items():
         for tech_name, tech_terms in CORE_TECH.items():
-            for comp_term in comp_terms[:2]:  # 每个竞争对手取2个关键词
-                for tech_term in tech_terms[:2]:  # 每个技术取2个关键词
+            for comp_term in comp_terms[:2]:
+                for tech_term in tech_terms[:2]:
                     category = "autonomous-driving" if "驾驶" in tech_term or "智驾" in tech_term else "sensors"
                     queries.append({
-                        "query": f"{comp_term} {tech_term} 2026",
+                        "query": f"{comp_term} {tech_term} 最新",
                         "category": category,
                         "dimension": f"竞争技术-{comp_name}"
                     })
 
-    # 竞争对手 x 法规 交叉查询 (政策风险)
+    # 竞争对手 x 法规 交叉查询
     for comp_name, comp_terms in COMPETITORS.items():
         for reg_name, reg_terms in REGULATIONS.items():
             for comp_term in comp_terms[:1]:
@@ -117,7 +145,7 @@ def generate_search_matrix() -> List[Dict[str, Any]]:
                         "dimension": f"法规合规-{comp_name}"
                     })
 
-    # 核心技术 x 法规 交叉查询 (技术准入)
+    # 核心技术 x 法规 交叉查询
     for tech_name, tech_terms in CORE_TECH.items():
         for reg_name, reg_terms in REGULATIONS.items():
             for tech_term in tech_terms[:1]:
@@ -128,14 +156,22 @@ def generate_search_matrix() -> List[Dict[str, Any]]:
                         "dimension": f"技术准入-{tech_name}"
                     })
 
-    # 高战略价值专项查询
+    # 高战略价值专项查询（使用动态未来年份）
     strategic_queries = [
-        "2027 自动驾驶路线图",
-        "2027 智能驾驶 Roadmap",
-        "Next-gen 智驾方案 2027",
-        "下一代 自动驾驶 2027",
-        "L4 商业化 2027",
-        "端到端 量产 2027",
+        f"{next_year} 自动驾驶路线图",
+        f"{next_year} 智能驾驶 Roadmap",
+        f"{next_year+1} 智驾方案",
+        "Next-gen 智驾方案",
+        "下一代 自动驾驶",
+        "L4 商业化 最新进展",
+        "端到端 量产 最新",
+        # 新增：热门车型和品牌
+        "Tesla FSD 最新版本",
+        "华为 ADS 最新",
+        "小米 SU7 智驾",
+        "问界 M9 智驾",
+        "蔚来 NAD 最新",
+        "小鹏 XNGP 最新",
     ]
     for query in strategic_queries:
         queries.append({
@@ -222,6 +258,8 @@ AI_MODEL = os.environ.get("DEFAULT_AI_MODEL", "gemini")
 GEMINI_API_URL = os.environ.get("GEMINI_API_URL", "https://new.lemonapi.site/v1")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "[L]gemini-3-pro-preview")
+# 联网搜索模型（用于获取实时信息）
+GEMINI_SEARCH_MODEL = os.environ.get("GEMINI_SEARCH_MODEL", "[L]gemini-3.1-pro-preview-search")
 KIMI_API_URL = os.environ.get("KIMI_API_URL", "https://api.moonshot.cn/v1")
 KIMI_API_KEY = os.environ.get("KIMI_API_KEY", "")
 KIMI_MODEL = os.environ.get("KIMI_MODEL", "kimi-k2.5")
@@ -235,7 +273,13 @@ def analyze_with_ai(title: str, snippet: str) -> Dict[str, Any]:
         print("   ⚠️ AI API Key 未配置，跳过 AI 分析")
         return None
 
-    prompt = f"""作为智能驾驶产业战略分析师，请对以下情报进行深度分析：
+    prompt = f"""作为智能驾驶产业战略分析师，请对以下情报进行深度分析。
+
+⚠️ 重要提示：
+- 当前日期是 {CURRENT_YEAR} 年
+- 请基于情报内容本身进行分析，不要假设额外的背景知识
+- 如果涉及版本号、发布时间等具体信息，请以情报内容为准
+- 如有不确定性，请在回答中注明
 
 【标题】{title}
 【内容】{snippet}
@@ -259,8 +303,27 @@ def analyze_with_ai(title: str, snippet: str) -> Dict[str, Any]:
 }}"""
 
     try:
-        # 优先使用 Gemini
-        if GEMINI_API_KEY:
+        # 根据 AI_MODEL 设置选择模型
+        if AI_MODEL == "kimi" and KIMI_API_KEY:
+            # 使用 Kimi (kimi-k2.5 不支持 temperature 参数)
+            response = requests.post(
+                f"{KIMI_API_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {KIMI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": KIMI_MODEL,
+                    "messages": [
+                        {"role": "system", "content": "你是智能驾驶产业战略分析专家，擅长提炼情报要点并给出战略洞察。"},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "max_tokens": 800
+                },
+                timeout=15
+            )
+        elif GEMINI_API_KEY:
+            # 使用 Gemini
             response = requests.post(
                 f"{GEMINI_API_URL}/chat/completions",
                 headers={
@@ -278,8 +341,8 @@ def analyze_with_ai(title: str, snippet: str) -> Dict[str, Any]:
                 },
                 timeout=15
             )
-        else:
-            # 使用 Kimi
+        elif KIMI_API_KEY:
+            # 回退到 Kimi
             response = requests.post(
                 f"{KIMI_API_URL}/chat/completions",
                 headers={
@@ -292,11 +355,13 @@ def analyze_with_ai(title: str, snippet: str) -> Dict[str, Any]:
                         {"role": "system", "content": "你是智能驾驶产业战略分析专家，擅长提炼情报要点并给出战略洞察。"},
                         {"role": "user", "content": prompt}
                     ],
-                    "temperature": 0.3,
                     "max_tokens": 800
                 },
                 timeout=15
             )
+        else:
+            print("   ⚠️ 没有可用的 AI API Key")
+            return None
 
         response.raise_for_status()
         data = response.json()
@@ -312,7 +377,7 @@ def analyze_with_ai(title: str, snippet: str) -> Dict[str, Any]:
                 "impact": analysis.get("impact", ""),
                 "focus_points": analysis.get("focus_points", []),
                 "ai_analyzed": True,
-                "ai_provider": "gemini" if GEMINI_API_KEY else "kimi",
+                "ai_provider": AI_MODEL,
                 "ai_analysis_time": datetime.now().isoformat()
             }
 
@@ -353,7 +418,27 @@ def generate_daily_strategic_summary(high_value_intel: List[Dict]) -> str:
 格式：直接输出段落，不需要标题。"""
 
     try:
-        if GEMINI_API_KEY:
+        # 根据 AI_MODEL 设置选择模型
+        if AI_MODEL == "kimi" and KIMI_API_KEY:
+            # 使用 Kimi
+            response = requests.post(
+                f"{KIMI_API_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {KIMI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": KIMI_MODEL,
+                    "messages": [
+                        {"role": "system", "content": "你是智能驾驶行业首席分析师，擅长撰写简洁有力的战略研判。"},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "max_tokens": 300
+                },
+                timeout=20
+            )
+        elif GEMINI_API_KEY:
+            # 使用 Gemini
             response = requests.post(
                 f"{GEMINI_API_URL}/chat/completions",
                 headers={
@@ -371,7 +456,8 @@ def generate_daily_strategic_summary(high_value_intel: List[Dict]) -> str:
                 },
                 timeout=20
             )
-        else:
+        elif KIMI_API_KEY:
+            # 回退到 Kimi
             response = requests.post(
                 f"{KIMI_API_URL}/chat/completions",
                 headers={
@@ -384,7 +470,6 @@ def generate_daily_strategic_summary(high_value_intel: List[Dict]) -> str:
                         {"role": "system", "content": "你是智能驾驶行业首席分析师，擅长撰写简洁有力的战略研判。"},
                         {"role": "user", "content": prompt}
                     ],
-                    "temperature": 0.5,
                     "max_tokens": 300
                 },
                 timeout=20
@@ -404,7 +489,7 @@ def generate_daily_strategic_summary(high_value_intel: List[Dict]) -> str:
                 "data_period_start": datetime.now().replace(hour=0, minute=0, second=0).isoformat(),
                 "data_period_end": datetime.now().isoformat(),
                 "intelligence_count": len(high_value_intel),
-                "generated_by": "gemini" if GEMINI_API_KEY else "kimi",
+                "generated_by": AI_MODEL,
                 "created_at": datetime.now().isoformat()
             }).execute()
         except Exception as e:
