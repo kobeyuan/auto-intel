@@ -214,7 +214,211 @@ def calculate_frontier_score(title: str, snippet: str, query_dimension: str) -> 
 
 
 # ==========================================
-# 4. 深度搜索逻辑
+# 4. AI 情报分析模块
+# ==========================================
+
+# AI 模型配置
+AI_MODEL = os.environ.get("DEFAULT_AI_MODEL", "gemini")
+GEMINI_API_URL = os.environ.get("GEMINI_API_URL", "https://new.lemonapi.site/v1")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "[L]gemini-3-pro-preview")
+KIMI_API_URL = os.environ.get("KIMI_API_URL", "https://api.moonshot.cn/v1")
+KIMI_API_KEY = os.environ.get("KIMI_API_KEY", "")
+KIMI_MODEL = os.environ.get("KIMI_MODEL", "kimi-k2.5")
+
+def analyze_with_ai(title: str, snippet: str) -> Dict[str, Any]:
+    """
+    使用 AI 模型对情报进行深度分析
+    产出：这是什么？对我们有什么影响？建议关注点是什么？
+    """
+    if not GEMINI_API_KEY and not KIMI_API_KEY:
+        print("   ⚠️ AI API Key 未配置，跳过 AI 分析")
+        return None
+
+    prompt = f"""作为智能驾驶产业战略分析师，请对以下情报进行深度分析：
+
+【标题】{title}
+【内容】{snippet}
+
+请回答以下三个问题（每点 30-50 字）：
+
+1. 【这是什么？】
+简要概括这条情报的核心内容，包括涉及的技术/产品/公司。
+
+2. 【对我们有什么影响？】
+分析这条情报对智能驾驶行业的潜在影响，以及对我们竞争策略的启示。
+
+3. 【建议关注点是什么？】
+列出 2-3 个需要持续跟踪的关键点或后续可能的发展。
+
+请用中文回答，格式如下：
+{{
+  "what_is_it": "概括内容...",
+  "impact": "影响分析...",
+  "focus_points": ["关注点1", "关注点2", "关注点3"]
+}}"""
+
+    try:
+        # 优先使用 Gemini
+        if GEMINI_API_KEY:
+            response = requests.post(
+                f"{GEMINI_API_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {GEMINI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": GEMINI_MODEL,
+                    "messages": [
+                        {"role": "system", "content": "你是智能驾驶产业战略分析专家，擅长提炼情报要点并给出战略洞察。"},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 800
+                },
+                timeout=15
+            )
+        else:
+            # 使用 Kimi
+            response = requests.post(
+                f"{KIMI_API_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {KIMI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": KIMI_MODEL,
+                    "messages": [
+                        {"role": "system", "content": "你是智能驾驶产业战略分析专家，擅长提炼情报要点并给出战略洞察。"},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 800
+                },
+                timeout=15
+            )
+
+        response.raise_for_status()
+        data = response.json()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+        # 解析 JSON
+        import json
+        json_match = __import__('re').search(r'\{[\s\S]*\}', content)
+        if json_match:
+            analysis = json.loads(json_match.group())
+            return {
+                "what_is_it": analysis.get("what_is_it", ""),
+                "impact": analysis.get("impact", ""),
+                "focus_points": analysis.get("focus_points", []),
+                "ai_analyzed": True,
+                "ai_provider": "gemini" if GEMINI_API_KEY else "kimi",
+                "ai_analysis_time": datetime.now().isoformat()
+            }
+
+    except Exception as e:
+        print(f"   ⚠️ AI 分析失败: {str(e)}")
+
+    return None
+
+def generate_daily_strategic_summary(high_value_intel: List[Dict]) -> str:
+    """
+    生成『今日 AI 战略精要』
+    汇总过去 24 小时高价值情报，生成 200 字以内的行业趋势研判
+    """
+    if not high_value_intel:
+        return "今日暂无高价值情报更新。"
+
+    if not GEMINI_API_KEY and not KIMI_API_KEY:
+        return "AI 分析模块未配置，无法生成战略精要。"
+
+    # 准备情报摘要
+    intel_summaries = []
+    for i, intel in enumerate(high_value_intel[:8], 1):  # 取前 8 条
+        intel_summaries.append(f"{i}. {intel['title']} ({intel.get('frontier_level', '常规')})")
+
+    intel_text = "\n".join(intel_summaries)
+
+    prompt = f"""作为智能驾驶行业首席分析师，请基于以下今日采集的高价值情报，生成一段『AI 战略精要』：
+
+【今日高价值情报】
+{intel_text}
+
+请生成一段 150-200 字的行业趋势研判，要求：
+1. 概括今日最重要的一两个趋势
+2. 点明对行业的关键影响
+3. 给出明日或近期关注建议
+4. 语言简洁有力，适合高管快速阅读
+
+格式：直接输出段落，不需要标题。"""
+
+    try:
+        if GEMINI_API_KEY:
+            response = requests.post(
+                f"{GEMINI_API_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {GEMINI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": GEMINI_MODEL,
+                    "messages": [
+                        {"role": "system", "content": "你是智能驾驶行业首席分析师，擅长撰写简洁有力的战略研判。"},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.5,
+                    "max_tokens": 300
+                },
+                timeout=20
+            )
+        else:
+            response = requests.post(
+                f"{KIMI_API_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {KIMI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": KIMI_MODEL,
+                    "messages": [
+                        {"role": "system", "content": "你是智能驾驶行业首席分析师，擅长撰写简洁有力的战略研判。"},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.5,
+                    "max_tokens": 300
+                },
+                timeout=20
+            )
+
+        response.raise_for_status()
+        data = response.json()
+        summary = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+
+        # 保存到数据库
+        try:
+            supabase.table("intelligence_reports").insert({
+                "report_type": "daily",
+                "title": f"今日 AI 战略精要 - {datetime.now().strftime('%Y-%m-%d')}",
+                "content": summary,
+                "overview": summary[:100] + "...",
+                "data_period_start": datetime.now().replace(hour=0, minute=0, second=0).isoformat(),
+                "data_period_end": datetime.now().isoformat(),
+                "intelligence_count": len(high_value_intel),
+                "generated_by": "gemini" if GEMINI_API_KEY else "kimi",
+                "created_at": datetime.now().isoformat()
+            }).execute()
+        except Exception as e:
+            print(f"   ⚠️ 保存战略精要失败: {str(e)}")
+
+        return summary
+
+    except Exception as e:
+        print(f"   ⚠️ 生成战略精要失败: {str(e)}")
+        return "战略精要生成失败，请稍后重试。"
+
+
+# ==========================================
+# 5. 深度搜索逻辑
 # ==========================================
 
 def fetch_with_depth(query_info: Dict[str, str]) -> List[Dict[str, Any]]:
@@ -258,7 +462,13 @@ def fetch_with_depth(query_info: Dict[str, str]) -> List[Dict[str, Any]]:
             # 计算前沿程度评分
             frontier = calculate_frontier_score(title, snippet, dimension)
 
-            items.append({
+            # 对高价值情报进行 AI 分析
+            ai_analysis = None
+            if frontier["score"] >= 40:  # 只对高前沿及以上进行 AI 分析
+                print(f"   🤖 AI 分析: {title[:30]}...")
+                ai_analysis = analyze_with_ai(title, snippet)
+
+            item = {
                 "title": title,
                 "link": res.get("url"),
                 "snippet": snippet,
@@ -271,7 +481,20 @@ def fetch_with_depth(query_info: Dict[str, str]) -> List[Dict[str, Any]]:
                 "frontier_keywords": frontier["keywords"],  # 匹配关键词
                 "published_at": res.get("page_age"),  # 发布时间
                 "collected_at": datetime.now().isoformat(),  # 采集时间
-            })
+            }
+
+            # 合并 AI 分析结果
+            if ai_analysis:
+                item.update({
+                    "ai_what_is_it": ai_analysis.get("what_is_it"),
+                    "ai_impact": ai_analysis.get("impact"),
+                    "ai_focus_points": ai_analysis.get("focus_points"),
+                    "ai_analyzed": True,
+                    "ai_provider": ai_analysis.get("ai_provider"),
+                    "ai_analysis_time": ai_analysis.get("ai_analysis_time")
+                })
+
+            items.append(item)
 
         return items
 
@@ -344,6 +567,14 @@ def update_intelligence() -> Dict[str, Any]:
             print(f"   - 🔥高战略价值: {stats['high_strategic']}")
             print(f"   - ⚡高前沿: {stats['high_frontier']}")
             print(f"   - 📌中前沿: {stats['medium_frontier']}")
+
+            # 生成今日 AI 战略精要
+            print("\n📝 生成今日 AI 战略精要...")
+            high_value_intel = [i for i in all_items if i.get("frontier_score", 0) >= 40]
+            strategic_summary = generate_daily_strategic_summary(high_value_intel)
+            stats["strategic_summary"] = strategic_summary
+            print(f"\n📊 战略精要 ({len(strategic_summary)} 字):")
+            print(f"{strategic_summary}")
 
         except Exception as e:
             print(f"❌ 数据库写入失败: {str(e)}")

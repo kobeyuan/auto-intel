@@ -33,7 +33,13 @@ ADD COLUMN IF NOT EXISTS frontier_level TEXT DEFAULT '常规',
 ADD COLUMN IF NOT EXISTS frontier_badge TEXT,
 ADD COLUMN IF NOT EXISTS frontier_keywords JSONB DEFAULT '[]'::jsonb,
 ADD COLUMN IF NOT EXISTS dimension TEXT,
-ADD COLUMN IF NOT EXISTS collected_at TIMESTAMP DEFAULT NOW();
+ADD COLUMN IF NOT EXISTS collected_at TIMESTAMP DEFAULT NOW(),
+
+-- AI 情报分析字段 (新增)
+ADD COLUMN IF NOT EXISTS ai_what_is_it TEXT,
+ADD COLUMN IF NOT EXISTS ai_impact TEXT,
+ADD COLUMN IF NOT EXISTS ai_focus_points JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS ai_analysis_time TIMESTAMP;
 
 -- 创建新索引
 CREATE INDEX IF NOT EXISTS idx_intel_source_credibility ON industry_intelligence(source_credibility);

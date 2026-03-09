@@ -20,6 +20,24 @@ interface IntelligenceItem {
   impact?: string
   created_at: string
   publish_time?: string
+  // AI 分析字段
+  frontier_score?: number
+  frontier_level?: string
+  frontier_badge?: string
+  ai_what_is_it?: string
+  ai_impact?: string
+  ai_focus_points?: string[]
+  ai_analyzed?: boolean
+}
+
+// AI 战略精要接口
+interface StrategicSummary {
+  id: string
+  title: string
+  content: string
+  overview: string
+  intelligence_count: number
+  created_at: string
 }
 
 // 格式化相对时间（确保鲜度显示）
@@ -68,13 +86,14 @@ export default function Home() {
   const [sensorNews, setSensorNews] = useState<IntelligenceItem[]>([])
   const [otaNews, setOtaNews] = useState<IntelligenceItem[]>([])
   const [sentiments, setSentiments] = useState<IntelligenceItem[]>([])
-  const [trendReport, setTrendReport] = useState<string>('')
+  const [strategicSummary, setStrategicSummary] = useState<StrategicSummary | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<string>('')
   const [supabase, setSupabase] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [expandedCard, setExpandedCard] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -120,18 +139,18 @@ export default function Home() {
 
       await Promise.all(queries)
 
-      // 加载趋势报告（这里简化处理，实际应该从API获取）
-      setTrendReport(`本周智能驾驶领域呈现以下趋势：
+      // 加载今日 AI 战略精要
+      const { data: summaryData } = await dbClient
+        .from('intelligence_reports')
+        .select('*')
+        .eq('report_type', 'daily')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
 
-1. **激光雷达技术突破**：华为发布896线激光雷达，分辨率大幅提升，预计将在问界M9等车型搭载。
-
-2. **城市NOA加速落地**：小鹏XNGP、华为ADS、理想AD Max等城市智驾方案持续迭代，竞争加剧。
-
-3. **座舱大模型普及**：鸿蒙座舱、NOMI GPT、理想同学等语音助手向端侧大模型演进。
-
-4. **芯片算力竞赛**：英伟达Thor、地平线J6、华为昇腾等下一代芯片即将量产。
-
-建议关注：华为激光雷达量产进展、L3法规落地时间、端到端算法实际表现。`)
+      if (summaryData) {
+        setStrategicSummary(summaryData)
+      }
 
       setLastUpdate(new Date().toLocaleString('zh-CN'))
     } catch (err) {
@@ -166,6 +185,7 @@ export default function Home() {
     const freshness = getFreshnessStyle(item.publish_time || item.created_at)
     const timeText = formatRelativeTime(item.publish_time || item.created_at)
     const hasValidUrl = isValidUrl(item.link)
+    const isExpanded = expandedCard === item.id
 
     return (
       <div className={`p-4 rounded-xl bg-gray-900/60 border ${importance.border} hover:border-opacity-80 transition-all group`}>
@@ -179,6 +199,13 @@ export default function Home() {
             {freshness.text && (
               <span className={`text-[10px] px-2 py-1 rounded ${freshness.badge}`}>
                 {freshness.text}
+              </span>
+            )}
+            {/* AI 分析标识 */}
+            {item.ai_analyzed && (
+              <span className="text-[10px] px-2 py-1 rounded bg-purple-500/20 text-purple-400 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                AI 已分析
               </span>
             )}
           </div>
@@ -195,44 +222,73 @@ export default function Home() {
           {item.title}
         </h3>
 
-        {/* AI 摘要 */}
-        {item.summary && (
-          <div className="mb-2 p-2 bg-blue-900/20 rounded border border-blue-500/20">
-            <div className="flex items-center gap-1 mb-1">
-              <Sparkles className="w-3 h-3 text-blue-400" />
-              <span className="text-[10px] text-blue-400">AI 摘要</span>
-            </div>
-            <p className="text-xs text-gray-300">{item.summary}</p>
-          </div>
-        )}
-
-        {/* 关键洞察 */}
-        {item.key_insights && item.key_insights.length > 0 && (
-          <div className="mb-2 space-y-1">
-            {item.key_insights.slice(0, 2).map((insight, idx) => (
-              <div key={idx} className="flex items-start gap-1">
-                <Target className="w-3 h-3 text-amber-400 mt-0.5 shrink-0" />
-                <span className="text-xs text-gray-400">{insight}</span>
+        {/* AI 情报综述 - 三个核心问题 */}
+        {item.ai_analyzed && (
+          <div className="mb-3 space-y-2">
+            {/* 问题1：这是什么？ */}
+            {item.ai_what_is_it && (
+              <div className="p-2 bg-blue-900/20 rounded border border-blue-500/20">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[10px] font-semibold text-blue-400">❶ 这是什么？</span>
+                </div>
+                <p className="text-xs text-gray-300 line-clamp-2">{item.ai_what_is_it}</p>
               </div>
-            ))}
+            )}
+
+            {/* 展开后显示更多 */}
+            {isExpanded && (
+              <>
+                {/* 问题2：对我们有什么影响？ */}
+                {item.ai_impact && (
+                  <div className="p-2 bg-amber-900/20 rounded border border-amber-500/20">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-[10px] font-semibold text-amber-400">❷ 有什么影响？</span>
+                    </div>
+                    <p className="text-xs text-gray-300">{item.ai_impact}</p>
+                  </div>
+                )}
+
+                {/* 问题3：建议关注点 */}
+                {item.ai_focus_points && item.ai_focus_points.length > 0 && (
+                  <div className="p-2 bg-emerald-900/20 rounded border border-emerald-500/20">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-[10px] font-semibold text-emerald-400">❸ 关注要点</span>
+                    </div>
+                    <ul className="text-xs text-gray-300 space-y-1">
+                      {item.ai_focus_points.map((point, idx) => (
+                        <li key={idx} className="flex items-start gap-1">
+                          <span className="text-emerald-500 mt-0.5">•</span>
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* 展开/收起按钮 */}
+            <button
+              onClick={() => setExpandedCard(isExpanded ? null : item.id)}
+              className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+            >
+              {isExpanded ? '收起详情' : '查看 AI 完整分析'}
+              <ExternalLink className="w-3 h-3" />
+            </button>
           </div>
         )}
 
-        {/* 相关技术标签 */}
-        {item.related_tech && item.related_tech.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {item.related_tech.slice(0, 3).map((tech, idx) => (
-              <span key={idx} className="text-[10px] bg-cyan-900/30 text-cyan-400 px-2 py-0.5 rounded">
-                {tech}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* 影响评估 */}
-        {item.impact && (
-          <div className="mb-2 text-xs text-gray-500 line-clamp-2">
-            <span className="text-purple-400">影响：</span>{item.impact}
+        {/* 前沿程度标识 */}
+        {item.frontier_level && item.frontier_level !== '常规' && (
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-lg">{item.frontier_badge}</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded ${
+              item.frontier_level === '高战略价值' ? 'bg-red-500/20 text-red-400' :
+              item.frontier_level === '高前沿' ? 'bg-amber-500/20 text-amber-400' :
+              'bg-blue-500/20 text-blue-400'
+            }`}>
+              {item.frontier_level} ({item.frontier_score}分)
+            </span>
           </div>
         )}
 
@@ -290,19 +346,40 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* 趋势报告区域 */}
-            <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-2xl p-6 border border-blue-500/30">
-              <div className="flex items-center gap-3 mb-4">
-                <Activity className="w-5 h-5 text-blue-400" />
-                <h2 className="text-lg font-bold text-gray-100">本周趋势洞察</h2>
-                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">AI 生成</span>
-              </div>
-              <div className="prose prose-invert prose-sm max-w-none">
-                <div className="whitespace-pre-line text-gray-300 text-sm leading-relaxed">
-                  {trendReport}
+            {/* 今日 AI 战略精要 - 置顶看板 */}
+            {strategicSummary && (
+              <div className="bg-gradient-to-r from-amber-900/30 via-orange-900/20 to-red-900/30 rounded-2xl p-6 border border-amber-500/40 shadow-lg shadow-amber-500/10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-amber-100">今日 AI 战略精要</h2>
+                      <p className="text-xs text-amber-400/80">基于过去24小时 {strategicSummary.intelligence_count} 条高价值情报生成</p>
+                    </div>
+                  </div>
+                  <span className="text-xs bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full border border-amber-500/30">
+                    {new Date(strategicSummary.created_at).toLocaleDateString('zh-CN')}
+                  </span>
+                </div>
+                <div className="bg-black/20 rounded-xl p-4 border border-amber-500/20">
+                  <p className="text-amber-50 text-sm leading-relaxed whitespace-pre-line">
+                    {strategicSummary.content}
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center gap-4 text-xs text-amber-500/60">
+                  <span className="flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    AI 实时研判
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Target className="w-3 h-3" />
+                    战略优先级: 高
+                  </span>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* 智能驾驶板块 - 优先级最高 */}
             <div className="bg-gradient-to-br from-gray-800/40 to-cyan-900/10 rounded-2xl p-6 border border-cyan-500/30">
