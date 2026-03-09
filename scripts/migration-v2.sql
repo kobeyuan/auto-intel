@@ -25,7 +25,15 @@ ADD COLUMN IF NOT EXISTS time_sensitivity TEXT DEFAULT 'normal',
 ADD COLUMN IF NOT EXISTS valid_until TIMESTAMP,
 ADD COLUMN IF NOT EXISTS ai_analyzed BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS ai_provider TEXT,
-ADD COLUMN IF NOT EXISTS confidence FLOAT;
+ADD COLUMN IF NOT EXISTS confidence FLOAT,
+
+-- 前沿程度评分字段 (新增)
+ADD COLUMN IF NOT EXISTS frontier_score INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS frontier_level TEXT DEFAULT '常规',
+ADD COLUMN IF NOT EXISTS frontier_badge TEXT,
+ADD COLUMN IF NOT EXISTS frontier_keywords JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS dimension TEXT,
+ADD COLUMN IF NOT EXISTS collected_at TIMESTAMP DEFAULT NOW();
 
 -- 创建新索引
 CREATE INDEX IF NOT EXISTS idx_intel_source_credibility ON industry_intelligence(source_credibility);
@@ -33,10 +41,16 @@ CREATE INDEX IF NOT EXISTS idx_intel_time_sensitivity ON industry_intelligence(t
 CREATE INDEX IF NOT EXISTS idx_intel_ai_analyzed ON industry_intelligence(ai_analyzed);
 CREATE INDEX IF NOT EXISTS idx_intel_confidence ON industry_intelligence(confidence DESC);
 
+-- 前沿程度索引 (新增)
+CREATE INDEX IF NOT EXISTS idx_intel_frontier_score ON industry_intelligence(frontier_score DESC);
+CREATE INDEX IF NOT EXISTS idx_intel_frontier_level ON industry_intelligence(frontier_level);
+CREATE INDEX IF NOT EXISTS idx_intel_dimension ON industry_intelligence(dimension);
+
 -- 为JSONB字段创建GIN索引（优化JSON查询）
 CREATE INDEX IF NOT EXISTS idx_intel_insights ON industry_intelligence USING GIN (key_insights);
 CREATE INDEX IF NOT EXISTS idx_intel_companies ON industry_intelligence USING GIN (related_companies);
 CREATE INDEX IF NOT EXISTS idx_intel_technologies ON industry_intelligence USING GIN (related_technologies);
+CREATE INDEX IF NOT EXISTS idx_intel_frontier_keywords ON industry_intelligence USING GIN (frontier_keywords);
 
 -- ===========================================
 -- 2. 创建 OTA 更新表
