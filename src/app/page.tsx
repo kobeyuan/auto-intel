@@ -19,6 +19,47 @@ interface IntelligenceItem {
   related_tech?: string[]
   impact?: string
   created_at: string
+  publish_time?: string
+}
+
+// 格式化相对时间（确保鲜度显示）
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffHours < 1) return '刚刚'
+  if (diffHours < 24) return `${diffHours}小时前`
+  if (diffDays === 1) return '昨天'
+  if (diffDays < 7) return `${diffDays}天前`
+  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+}
+
+// 获取鲜度样式（越新越突出）
+function getFreshnessStyle(dateString: string): { text: string; color: string; badge: string } {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+
+  if (diffHours < 6) return { text: '🔥 最新', color: 'text-red-400', badge: 'bg-red-500/20 text-red-400' }
+  if (diffHours < 24) return { text: '⚡ 今日', color: 'text-yellow-400', badge: 'bg-yellow-500/20 text-yellow-400' }
+  if (diffHours < 72) return { text: '📌 近期', color: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-400' }
+  return { text: '', color: 'text-gray-500', badge: 'bg-gray-800 text-gray-500' }
+}
+
+// 验证URL是否有效
+function isValidUrl(url: string): boolean {
+  if (!url || url === '') return false
+  if (url.startsWith('https://example.com')) return false
+  if (url.startsWith('http://example.com')) return false
+  try {
+    new URL(url)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export default function Home() {
@@ -122,18 +163,31 @@ export default function Home() {
   // 情报卡片组件
   const IntelligenceCard = ({ item, colorClass }: { item: IntelligenceItem; colorClass: string }) => {
     const importance = getImportanceStyle(item.importance)
+    const freshness = getFreshnessStyle(item.publish_time || item.created_at)
+    const timeText = formatRelativeTime(item.publish_time || item.created_at)
+    const hasValidUrl = isValidUrl(item.source_url)
 
     return (
       <div className={`p-4 rounded-xl bg-gray-900/60 border ${importance.border} hover:border-opacity-80 transition-all group`}>
-        {/* 头部：来源和重要性 */}
+        {/* 头部：来源、重要性和鲜度 */}
         <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-400">{item.source}</span>
             <span className={`text-[10px] px-2 py-1 rounded ${importance.bg} ${importance.color}`}>
               重要度{importance.label}
             </span>
+            {freshness.text && (
+              <span className={`text-[10px] px-2 py-1 rounded ${freshness.badge}`}>
+                {freshness.text}
+              </span>
+            )}
           </div>
           {getSentimentIcon(item.sentiment)}
+        </div>
+
+        {/* 时间戳（鲜度） */}
+        <div className="flex items-center gap-1 mb-2">
+          <span className={`text-[10px] ${freshness.color}`}>{timeText}</span>
         </div>
 
         {/* 标题 */}
@@ -182,11 +236,22 @@ export default function Home() {
           </div>
         )}
 
-        {/* 原文链接 */}
-        <a href={item.source_url} target="_blank" rel="noreferrer"
-           className={`text-xs ${colorClass} opacity-80 hover:opacity-100 flex items-center gap-1 mt-2`}>
-          查看原文 <ExternalLink className="w-3 h-3" />
-        </a>
+        {/* 原文链接 - 仅在有有效URL时显示 */}
+        {hasValidUrl ? (
+          <a
+            href={item.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`text-xs ${colorClass} opacity-80 hover:opacity-100 flex items-center gap-1 mt-2 hover:underline`}
+            title={item.source_url}
+          >
+            查看原文 <ExternalLink className="w-3 h-3" />
+          </a>
+        ) : (
+          <span className="text-xs text-gray-600 flex items-center gap-1 mt-2 cursor-not-allowed" title="暂无原文链接">
+            原文链接暂不可用
+          </span>
+        )}
       </div>
     )
   }
@@ -239,13 +304,47 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 传感器专题 - 突出显示 */}
-            <div className="bg-gray-800/30 rounded-2xl p-6 border border-rose-500/30">
+            {/* 智能驾驶板块 - 优先级最高 */}
+            <div className="bg-gradient-to-br from-gray-800/40 to-cyan-900/10 rounded-2xl p-6 border border-cyan-500/30">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <Car className="w-5 h-5 text-cyan-400" />
+                  <h2 className="text-lg font-bold text-gray-100">智能驾驶 AD/ADAS</h2>
+                  <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded">核心</span>
+                </div>
+                <span className="text-xs text-gray-500">{drivingNews.length} 条情报</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {drivingNews.map((item) => (
+                  <IntelligenceCard key={item.id} item={item} colorClass="text-cyan-400" />
+                ))}
+              </div>
+            </div>
+
+            {/* 智能座舱板块 */}
+            <div className="bg-gradient-to-br from-gray-800/40 to-purple-900/10 rounded-2xl p-6 border border-purple-500/30">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <MonitorSmartphone className="w-5 h-5 text-purple-400" />
+                  <h2 className="text-lg font-bold text-gray-100">智能座舱 Smart Cockpit</h2>
+                  <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">核心</span>
+                </div>
+                <span className="text-xs text-gray-500">{cockpitNews.length} 条情报</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {cockpitNews.map((item) => (
+                  <IntelligenceCard key={item.id} item={item} colorClass="text-purple-400" />
+                ))}
+              </div>
+            </div>
+
+            {/* 传感器专题 - 放后面 */}
+            <div className="bg-gradient-to-br from-gray-800/40 to-rose-900/10 rounded-2xl p-6 border border-rose-500/30">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <Radar className="w-5 h-5 text-rose-400" />
                   <h2 className="text-lg font-bold text-gray-100">传感器前沿</h2>
-                  <span className="text-xs bg-rose-500/20 text-rose-400 px-2 py-1 rounded">高关注</span>
+                  <span className="text-xs bg-rose-500/20 text-rose-400 px-2 py-1 rounded">上游</span>
                 </div>
                 <span className="text-xs text-gray-500">{sensorNews.length} 条情报</span>
               </div>
@@ -256,37 +355,15 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 智能驾驶板块 */}
-            <div className="bg-gray-800/30 rounded-2xl p-6 border border-cyan-500/30">
-              <div className="flex items-center gap-3 mb-5">
-                <Car className="w-5 h-5 text-cyan-400" />
-                <h2 className="text-lg font-bold text-gray-100">智能驾驶 AD/ADAS</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {drivingNews.map((item) => (
-                  <IntelligenceCard key={item.id} item={item} colorClass="text-cyan-400" />
-                ))}
-              </div>
-            </div>
-
-            {/* 智能座舱板块 */}
-            <div className="bg-gray-800/30 rounded-2xl p-6 border border-purple-500/30">
-              <div className="flex items-center gap-3 mb-5">
-                <MonitorSmartphone className="w-5 h-5 text-purple-400" />
-                <h2 className="text-lg font-bold text-gray-100">智能座舱 Smart Cockpit</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {cockpitNews.map((item) => (
-                  <IntelligenceCard key={item.id} item={item} colorClass="text-purple-400" />
-                ))}
-              </div>
-            </div>
-
             {/* OTA 追踪 */}
-            <div className="bg-gray-800/30 rounded-2xl p-6 border border-amber-500/30">
-              <div className="flex items-center gap-3 mb-5">
-                <CloudDownload className="w-5 h-5 text-amber-400" />
-                <h2 className="text-lg font-bold text-gray-100">OTA 升级追踪</h2>
+            <div className="bg-gradient-to-br from-gray-800/40 to-amber-900/10 rounded-2xl p-6 border border-amber-500/30">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <CloudDownload className="w-5 h-5 text-amber-400" />
+                  <h2 className="text-lg font-bold text-gray-100">OTA 升级追踪</h2>
+                  <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-1 rounded">动态</span>
+                </div>
+                <span className="text-xs text-gray-500">{otaNews.length} 条情报</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {otaNews.map((item) => (
@@ -296,14 +373,16 @@ export default function Home() {
             </div>
 
             {/* 舆情监控 */}
-            <div className="bg-gray-800/30 rounded-2xl p-6 border border-emerald-500/30">
+            <div className="bg-gradient-to-br from-gray-800/40 to-emerald-900/10 rounded-2xl p-6 border border-emerald-500/30">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <MessageSquareText className="w-5 h-5 text-emerald-400" />
                   <h2 className="text-lg font-bold text-gray-100">全网舆情雷达</h2>
+                  <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">参考</span>
                 </div>
-                <div className="flex gap-2 text-xs">
+                <div className="flex gap-4 text-xs">
                   <span className="flex items-center gap-1 text-emerald-400"><TrendingUp className="w-3 h-3"/> 正面</span>
+                  <span className="flex items-center gap-1 text-gray-400"><Minus className="w-3 h-3"/> 中性</span>
                   <span className="flex items-center gap-1 text-rose-400"><TrendingDown className="w-3 h-3"/> 负面</span>
                 </div>
               </div>
