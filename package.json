@@ -6,7 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "ai:kimi": "node scripts/switch-model.js kimi",
+    "ai:gemini": "node scripts/switch-model.js gemini",
+    "ai:status": "node scripts/switch-model.js status",
+    "ai:test": "node scripts/test-model-switching.js",
+    "security:check": "node scripts/security-check.js",
+    "security:install": "husky install && chmod +x .husky/pre-commit",
+    "intel:crawl": "node scripts/crawl-intelligence-v2.js",
+    "intel:sensor": "node scripts/crawl-intelligence-v2.js --category=sensor",
+    "intel:ota": "node scripts/crawl-intelligence-v2.js --category=ota",
+    "db:migrate": "node scripts/db-migrate-v2.js",
+    "db:save": "node scripts/crawl-intelligence-v2.js --save"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
@@ -23,8 +34,10 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.24",
+    "dotenv": "^17.3.1",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
+    "node-fetch": "^2.7.0",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4"
