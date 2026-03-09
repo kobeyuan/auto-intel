@@ -11,7 +11,7 @@ interface IntelligenceItem {
   snippet: string
   summary?: string
   source: string
-  source_url: string
+  link: string
   category: string
   sentiment: 'positive' | 'neutral' | 'negative'
   importance: 'high' | 'medium' | 'low'
@@ -165,7 +165,7 @@ export default function Home() {
     const importance = getImportanceStyle(item.importance)
     const freshness = getFreshnessStyle(item.publish_time || item.created_at)
     const timeText = formatRelativeTime(item.publish_time || item.created_at)
-    const hasValidUrl = isValidUrl(item.source_url)
+    const hasValidUrl = isValidUrl(item.link)
 
     return (
       <div className={`p-4 rounded-xl bg-gray-900/60 border ${importance.border} hover:border-opacity-80 transition-all group`}>
@@ -239,11 +239,11 @@ export default function Home() {
         {/* 原文链接 - 仅在有有效URL时显示 */}
         {hasValidUrl ? (
           <a
-            href={item.source_url}
+            href={item.link}
             target="_blank"
             rel="noopener noreferrer"
             className={`text-xs ${colorClass} opacity-80 hover:opacity-100 flex items-center gap-1 mt-2 hover:underline`}
-            title={item.source_url}
+            title={item.link}
           >
             查看原文 <ExternalLink className="w-3 h-3" />
           </a>

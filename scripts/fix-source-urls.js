@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 修复数据库中的无效原文链接
-// 用法: node scripts/fix-source-urls.js
+// 用法: node scripts/fix-source-urls.js [--delete]
 
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
@@ -10,6 +10,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ 缺少 Supabase 配置');
+  console.error('   请检查 .env 文件中的 NEXT_PUBLIC_SUPABASE_URL 和 SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 
@@ -39,7 +40,7 @@ async function fixInvalidUrls() {
     const { data: invalidItems, error } = await supabase
       .from('industry_intelligence')
       .select('*')
-      .or('source_url.is.null,source_url.eq.,source_url.like.%example.com%');
+      .or('link.is.null,link.eq.,link.like.%example.com%');
 
     if (error) {
       console.error('❌ 查询失败:', error.message);
@@ -55,13 +56,12 @@ async function fixInvalidUrls() {
 
     // 2. 修复每个无效链接
     let fixed = 0;
-    let deleted = 0;
 
     for (const item of invalidItems) {
-      // 策略1: 如果有真实URL模式，尝试生成
       const source = item.source || '';
       const title = item.title || '';
 
+      // 根据来源生成搜索链接
       let newUrl = null;
       for (const [key, pattern] of Object.entries(SOURCE_URL_PATTERNS)) {
         if (source.includes(key)) {
@@ -69,23 +69,21 @@ async function fixInvalidUrls() {
           break;
         }
       }
-
-      // 如果没有匹配到，使用默认搜索链接
       if (!newUrl) {
         newUrl = SOURCE_URL_PATTERNS['默认'](title, source);
       }
 
-      // 更新数据库
+      // 更新数据库（使用 link 字段）
       const { error: updateError } = await supabase
         .from('industry_intelligence')
-        .update({ source_url: newUrl, updated_at: new Date().toISOString() })
+        .update({ link: newUrl, created_at: new Date().toISOString() })
         .eq('id', item.id);
 
       if (updateError) {
-        console.log(`   ❌ 更新失败: ${title.substring(0, 30)}...`);
+        console.log(`   ❌ 更新失败: ${title.substring(0, 30)}... - ${updateError.message}`);
       } else {
-        console.log(`   ✓ ${title.substring(0, 40)}...`);
-        console.log(`     → ${newUrl.substring(0, 60)}...`);
+        console.log(`   ✓ ${title.substring(0, 45)}`);
+        console.log(`     → ${newUrl.substring(0, 70)}`);
         fixed++;
       }
     }
@@ -101,10 +99,22 @@ async function fixInvalidUrls() {
 async function deleteMockData() {
   console.log('\n🗑️  删除模拟数据...');
 
+  const { data: toDelete, error: countError } = await supabase
+    .from('industry_intelligence')
+    .select('id')
+    .or('link.like.%example.com%,link.is.null,link.eq.');
+
+  if (countError) {
+    console.error('❌ 查询失败:', countError.message);
+    return;
+  }
+
+  console.log(`   将删除 ${toDelete?.length || 0} 条模拟数据`);
+
   const { error } = await supabase
     .from('industry_intelligence')
     .delete()
-    .or('source_url.like.%example.com%,source_url.is.null');
+    .or('link.like.%example.com%,link.is.null,link.eq.');
 
   if (error) {
     console.error('❌ 删除失败:', error.message);
