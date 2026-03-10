@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "regions": ["hkg1", "sin1", "icn1"],
+  "regions": ["hkg1"],
   "functions": {
     "app/api/**": {
       "maxDuration": 60
@@ -25,12 +25,7 @@
       ]
     }
   ],
-  "crons": [
-    {
-      "path": "/api/update_intel",
-      "schedule": "0 */6 * * *"
-    }
-  ],
+  "crons": [],
   "rewrites": [
     {
       "source": "/api/:path*",
