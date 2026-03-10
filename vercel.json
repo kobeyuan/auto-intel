@@ -3,7 +3,11 @@
   "regions": ["hkg1", "sin1", "icn1"],
   "functions": {
     "app/api/**": {
-      "maxDuration": 30
+      "maxDuration": 60
+    },
+    "api/**/*.py": {
+      "maxDuration": 300,
+      "memory": 1024
     }
   },
   "headers": [
@@ -19,6 +23,12 @@
           "value": "public, max-age=3600, s-maxage=3600"
         }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/update_intel",
+      "schedule": "0 */6 * * *"
     }
   ],
   "rewrites": [

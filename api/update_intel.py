@@ -22,7 +22,25 @@ SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 BRAVE_API_KEY = os.environ.get("BRAVE_API_KEY")
 
+# 代理配置（用于解决网络限制问题）
+HTTP_PROXY = os.environ.get("HTTP_PROXY")
+HTTPS_PROXY = os.environ.get("HTTPS_PROXY")
+PROXIES = {}
+if HTTP_PROXY:
+    PROXIES['http'] = HTTP_PROXY
+if HTTPS_PROXY:
+    PROXIES['https'] = HTTPS_PROXY
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# 请求会话配置（支持代理和重试）
+def create_session():
+    """创建配置好的请求会话"""
+    session = requests.Session()
+    if PROXIES:
+        session.proxies.update(PROXIES)
+        print(f"   使用代理: {PROXIES}")
+    return session
 
 
 # ==========================================
@@ -178,6 +196,72 @@ def generate_search_matrix() -> List[Dict[str, Any]]:
             "query": query,
             "category": "autonomous-driving",
             "dimension": "战略前瞻"
+        })
+
+    # ========== OTA 专项查询 ==========
+    ota_brands = {
+        "Tesla": ["Tesla OTA", "特斯拉 OTA更新", "特斯拉 软件更新"],
+        "Huawei": ["华为 鸿蒙座舱 OTA", "问界 OTA", "智界 OTA更新"],
+        "NIO": ["蔚来 OTA", "蔚来 智能系统更新", "NIO OS更新"],
+        "XPeng": ["小鹏 OTA", "小鹏 XOS更新", "小鹏 天玑系统"],
+        "LiAuto": ["理想 OTA", "理想 智能座舱更新", "理想 OTA升级"],
+        "Xiaomi": ["小米汽车 OTA", "小米 SU7 OTA", "小米澎湃座舱"],
+        "BYD": ["比亚迪 OTA", "腾势 OTA更新", "仰望 OTA"],
+    }
+
+    for brand, terms in ota_brands.items():
+        for term in terms[:2]:  # 每个品牌取2个关键词
+            queries.append({
+                "query": f"{term} 最新",
+                "category": "ota",
+                "dimension": f"OTA更新-{brand}"
+            })
+            # 座舱功能
+            queries.append({
+                "query": f"{term} 座舱功能",
+                "category": "ota",
+                "dimension": f"座舱功能-{brand}"
+            })
+            # 智驾功能
+            queries.append({
+                "query": f"{term} 智驾功能",
+                "category": "ota",
+                "dimension": f"智驾功能-{brand}"
+            })
+
+    # ========== 座舱功能专项查询 ==========
+    cockpit_features = [
+        "智能座舱 芯片升级", "座舱 8295芯片", "座舱 骁龙芯片",
+        "鸿蒙座舱 最新功能", "智能座舱 多屏互动",
+        "座舱语音助手", "AI大模型 座舱", "智能座舱 手势控制",
+        "AR-HUD 抬头显示", "智能座舱 氛围灯",
+        "座舱游戏", "车载娱乐", "智能座舱 K歌",
+        "华为 鸿蒙座舱 4.0", "小米 澎湃座舱 功能",
+        "蔚来 数字座舱", "理想 智能座舱 升级",
+    ]
+    for query in cockpit_features:
+        queries.append({
+            "query": query,
+            "category": "smart-cockpit",
+            "dimension": "座舱功能特性"
+        })
+
+    # ========== 智驾功能专项查询 ==========
+    ad_features = [
+        "城市NOA 最新开通", "城市导航辅助 推送",
+        "高速NOA 功能升级", "智能泊车 代客泊车",
+        "端到端 智驾推送", "无图智驾 开通城市",
+        "华为 ADS 3.0 功能", "小鹏 XNGP 全量推送",
+        "理想 AD Max 功能", "蔚来 Banyan 智驾",
+        "小米 SU7 城市NOA", "问界 M9 智驾功能",
+        "自动驾驶 安全升级", "AEB 功能升级",
+        "智能召唤", "自动泊车 机械车位",
+    ]
+    for query in ad_features:
+        queries.append({
+            "query": query,
+            "category": "autonomous-driving",
+            "dimension": "智驾功能特性"
         })
 
     return queries
@@ -530,11 +614,12 @@ def fetch_with_depth(query_info: Dict[str, str]) -> List[Dict[str, Any]]:
     }
 
     try:
-        response = requests.get(
+        session = create_session()
+        response = session.get(
             "https://api.search.brave.com/res/v1/web/search",
             headers=headers,
             params=params,
-            timeout=10
+            timeout=30  # 增加超时时间
         )
         response.raise_for_status()
         results = response.json().get("web", {}).get("results", [])
