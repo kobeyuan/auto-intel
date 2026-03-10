@@ -1,0 +1,644 @@
+{
+  "version": "2.0",
+  "last_updated": "2026-03-10",
+  "sources": {
+    "official_sites": {
+      "name": "官方渠道",
+      "description": "车企和科技公司官方发布渠道，可信度最高",
+      "sources": [
+        {
+          "id": "tesla_official",
+          "name": "Tesla 官方",
+          "company": "Tesla",
+          "category": "autonomous-driving",
+          "tier": 1,
+          "credibility_score": 95,
+          "urls": {
+            "homepage": "https://www.tesla.com",
+            "news": "https://www.tesla.com/news",
+            "blog": "https://www.tesla.com/blog",
+            "ir": "https://ir.tesla.com/news-releases"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null,
+            "note": "需通过网页抓取"
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".article-title, .news-item",
+            "frequency": "daily"
+          },
+          "focus_areas": ["FSD", "OTA", "智能座舱", "自动驾驶"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "Tesla 官方新闻和博客"
+        },
+        {
+          "id": "huawei_consumer",
+          "name": "华为消费者业务",
+          "company": "Huawei",
+          "category": "autonomous-driving",
+          "tier": 1,
+          "credibility_score": 95,
+          "urls": {
+            "homepage": "https://consumer.huawei.com/cn/",
+            "news": "https://consumer.huawei.com/cn/press/news/",
+            "harmonyos": "https://www.harmonyos.com"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null,
+            "note": "需通过网页抓取或API"
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".news-item, .press-release",
+            "frequency": "daily"
+          },
+          "focus_areas": ["ADS", "鸿蒙座舱", "乾崑", "问界", "智界"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "华为智能汽车解决方案官方"
+        },
+        {
+          "id": "nio_official",
+          "name": "蔚来官方",
+          "company": "NIO",
+          "category": "autonomous-driving",
+          "tier": 1,
+          "credibility_score": 95,
+          "urls": {
+            "homepage": "https://www.nio.com",
+            "news": "https://www.nio.com/news",
+            "nioradio": "https://www.nio.com/community",
+            "app": "https://app.nio.com"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".news-title, .article-title",
+            "frequency": "daily"
+          },
+          "focus_areas": ["NAD", "Banyan", "智能座舱", "NIO Phone"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "蔚来官方新闻"
+        },
+        {
+          "id": "xpeng_official",
+          "name": "小鹏汽车官方",
+          "company": "XPeng",
+          "category": "autonomous-driving",
+          "tier": 1,
+          "credibility_score": 95,
+          "urls": {
+            "homepage": "https://www.xpeng.com",
+            "news": "https://www.xpeng.com/news",
+            "community": "https://bbs.xpeng.com"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".news-item",
+            "frequency": "daily"
+          },
+          "focus_areas": ["XNGP", "XOS", "智能座舱", "图灵芯片"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "小鹏汽车官方新闻"
+        },
+        {
+          "id": "li_auto_official",
+          "name": "理想汽车官方",
+          "company": "Li Auto",
+          "category": "autonomous-driving",
+          "tier": 1,
+          "credibility_score": 95,
+          "urls": {
+            "homepage": "https://www.lixiang.com",
+            "news": "https://www.lixiang.com/news",
+            "community": "https://www.lixiang.com/community"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".news-title",
+            "frequency": "daily"
+          },
+          "focus_areas": ["AD Max", "智能座舱", "Mind GPT"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "理想汽车官方新闻"
+        },
+        {
+          "id": "xiaomi_auto",
+          "name": "小米汽车",
+          "company": "Xiaomi",
+          "category": "autonomous-driving",
+          "tier": 1,
+          "credibility_score": 95,
+          "urls": {
+            "homepage": "https://www.xiaomiev.com",
+            "news": "https://www.xiaomiev.com/news",
+            "su7": "https://www.xiaomiev.com/su7"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".news-item",
+            "frequency": "daily"
+          },
+          "focus_areas": ["澎湃座舱", "Xiaomi Pilot", "SU7 OTA"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "小米汽车官方"
+        },
+        {
+          "id": "byd_official",
+          "name": "比亚迪官方",
+          "company": "BYD",
+          "category": "autonomous-driving",
+          "tier": 1,
+          "credibility_score": 95,
+          "urls": {
+            "homepage": "https://www.byd.com",
+            "news": "https://www.byd.com/cn/news",
+            "denza": "https://www.denza.com",
+            "yangwang": "https://www.yangwangauto.com"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".news-item",
+            "frequency": "daily"
+          },
+          "focus_areas": ["天神之眼", "DiLink", "云辇", "易四方"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "比亚迪、腾势、仰望官方"
+        },
+        {
+          "id": "zeekr_official",
+          "name": "极氪官方",
+          "company": "Zeekr",
+          "category": "autonomous-driving",
+          "tier": 1,
+          "credibility_score": 95,
+          "urls": {
+            "homepage": "https://www.zeekrlife.com",
+            "news": "https://www.zeekrlife.com/news"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".news-item",
+            "frequency": "daily"
+          },
+          "focus_areas": ["浩瀚智驾", "ZEEKR OS", "智能座舱"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "极氪官方"
+        }
+      ]
+    },
+    "media_rss": {
+      "name": "专业媒体 RSS",
+      "description": "科技/汽车专业媒体，提供 RSS 订阅",
+      "sources": [
+        {
+          "id": "cnevpost",
+          "name": "CnEVPost",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 85,
+          "urls": {
+            "homepage": "https://cnevpost.com",
+            "rss": "https://cnevpost.com/feed"
+          },
+          "rss": {
+            "enabled": true,
+            "url": "https://cnevpost.com/feed",
+            "format": "xml",
+            "update_frequency": "hourly"
+          },
+          "focus_areas": ["电动车", "智能驾驶", "智能座舱", "电池技术"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "英文新能源汽车专业媒体，时效性强"
+        },
+        {
+          "id": "electrek",
+          "name": "Electrek",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 85,
+          "urls": {
+            "homepage": "https://electrek.co",
+            "rss": "https://electrek.co/feed"
+          },
+          "rss": {
+            "enabled": true,
+            "url": "https://electrek.co/feed",
+            "format": "xml",
+            "update_frequency": "hourly"
+          },
+          "focus_areas": ["Tesla", "电动车", "自动驾驶", "充电网络"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "国外知名电动车媒体"
+        },
+        {
+          "id": "insideevs",
+          "name": "InsideEVs",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 80,
+          "urls": {
+            "homepage": "https://insideevs.com",
+            "rss": "https://insideevs.com/rss.xml"
+          },
+          "rss": {
+            "enabled": true,
+            "url": "https://insideevs.com/rss.xml",
+            "format": "xml",
+            "update_frequency": "hourly"
+          },
+          "focus_areas": ["电动车", "续航测试", "智能驾驶"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "InsideEVs 电动车媒体"
+        },
+        {
+          "id": "techcrunch_mobility",
+          "name": "TechCrunch Mobility",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 85,
+          "urls": {
+            "homepage": "https://techcrunch.com/category/transportation/",
+            "rss": "https://techcrunch.com/category/transportation/feed/"
+          },
+          "rss": {
+            "enabled": true,
+            "url": "https://techcrunch.com/category/transportation/feed/",
+            "format": "xml",
+            "update_frequency": "hourly"
+          },
+          "focus_areas": ["自动驾驶", "出行科技", "智能交通"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "TechCrunch 出行板块"
+        },
+        {
+          "id": "thedriven",
+          "name": "The Driven",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 80,
+          "urls": {
+            "homepage": "https://thedriven.io",
+            "rss": "https://thedriven.io/feed/"
+          },
+          "rss": {
+            "enabled": true,
+            "url": "https://thedriven.io/feed/",
+            "format": "xml",
+            "update_frequency": "daily"
+          },
+          "focus_areas": ["电动车", "自动驾驶", "澳洲市场"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "澳洲电动车媒体"
+        }
+      ]
+    },
+    "chinese_media": {
+      "name": "中文科技媒体",
+      "description": "国内科技/汽车媒体（需网页抓取）",
+      "sources": [
+        {
+          "id": "kr36",
+          "name": "36氪",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 80,
+          "urls": {
+            "homepage": "https://36kr.com",
+            "tech": "https://36kr.com/tech",
+            "auto": "https://36kr.com/club/1751945601411073"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null,
+            "note": "需网页抓取或使用付费 API"
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".article-item-title",
+            "frequency": "hourly"
+          },
+          "focus_areas": ["智能驾驶", "电动车", "智能座舱", "创业投资"],
+          "enabled": true,
+          "manual_review": true,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "36氪科技和汽车板块"
+        },
+        {
+          "id": "pingwest",
+          "name": "品玩",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 80,
+          "urls": {
+            "homepage": "https://www.pingwest.com",
+            "auto": "https://www.pingwest.com/tag/汽车"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".item-title",
+            "frequency": "hourly"
+          },
+          "focus_areas": ["智能汽车", "科技产品"],
+          "enabled": true,
+          "manual_review": true,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "品玩科技媒体"
+        },
+        {
+          "id": "geekpark",
+          "name": "极客公园",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 80,
+          "urls": {
+            "homepage": "https://www.geekpark.net",
+            "auto": "https://www.geekpark.net/tag/智能汽车"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".article-title",
+            "frequency": "hourly"
+          },
+          "focus_areas": ["智能汽车", "科技产品"],
+          "enabled": true,
+          "manual_review": true,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "极客公园"
+        },
+        {
+          "id": "autohome",
+          "name": "汽车之家",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 75,
+          "urls": {
+            "homepage": "https://www.autohome.com.cn",
+            "news": "https://www.autohome.com.cn/news/",
+            "tech": "https://www.autohome.com.cn/tech/"
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": true,
+            "selector": ".article-title",
+            "frequency": "hourly"
+          },
+          "focus_areas": ["新车发布", "智能驾驶", "智能座舱"],
+          "enabled": true,
+          "manual_review": true,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "汽车之家"
+        },
+        {
+          "id": "chedongxi",
+          "name": "车东西",
+          "category": "media",
+          "tier": 2,
+          "credibility_score": 80,
+          "urls": {
+            "homepage": "https://www.chedongxi.com",
+            "wechat": "https://mp.weixin.qq.com/s?__biz=MzI5ODAzNDc3NQ=="
+          },
+          "rss": {
+            "enabled": false,
+            "url": null
+          },
+          "scraping": {
+            "enabled": false,
+            "note": "主要为微信公众号，需特殊处理"
+          },
+          "focus_areas": ["智能驾驶", "电动车", "芯片"],
+          "enabled": true,
+          "manual_review": true,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "车东西，专注智能汽车"
+        }
+      ]
+    },
+    "social_media": {
+      "name": "社交媒体",
+      "description": "微博、B站等社交媒体官方账号",
+      "sources": [
+        {
+          "id": "weibo_tesla",
+          "name": "特斯拉中国 微博",
+          "platform": "weibo",
+          "category": "social",
+          "tier": 1,
+          "credibility_score": 90,
+          "urls": {
+            "homepage": "https://weibo.com/tesla"
+          },
+          "api": {
+            "enabled": false,
+            "note": "需申请微博 API 权限"
+          },
+          "focus_areas": ["FSD", "OTA", "产品发布"],
+          "enabled": false,
+          "manual_review": true,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "特斯拉中国官方微博"
+        },
+        {
+          "id": "weibo_huawei",
+          "name": "华为中国 微博",
+          "platform": "weibo",
+          "category": "social",
+          "tier": 1,
+          "credibility_score": 90,
+          "urls": {
+            "homepage": "https://weibo.com/huawei"
+          },
+          "api": {
+            "enabled": false,
+            "note": "需申请微博 API 权限"
+          },
+          "focus_areas": ["鸿蒙智行", "ADS", "新车发布"],
+          "enabled": false,
+          "manual_review": true,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "华为中国官方微博"
+        },
+        {
+          "id": "bilibili_ev",
+          "name": "B站 新能源汽车区",
+          "platform": "bilibili",
+          "category": "social",
+          "tier": 3,
+          "credibility_score": 60,
+          "urls": {
+            "homepage": "https://www.bilibili.com/v/car/",
+            "tech": "https://www.bilibili.com/v/tech/"
+          },
+          "api": {
+            "enabled": false,
+            "note": "需申请 B站 API"
+          },
+          "focus_areas": ["评测视频", "OTA体验", "智驾测试"],
+          "enabled": false,
+          "manual_review": true,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "B站新能源相关内容（自媒体，需谨慎）"
+        }
+      ]
+    },
+    "github_community": {
+      "name": "开源社区",
+      "description": "GitHub、开源项目等",
+      "sources": [
+        {
+          "id": "github_autoware",
+          "name": "Autoware",
+          "platform": "github",
+          "category": "open-source",
+          "tier": 2,
+          "credibility_score": 85,
+          "urls": {
+            "homepage": "https://github.com/autowarefoundation/autoware",
+            "releases": "https://github.com/autowarefoundation/autoware/releases"
+          },
+          "rss": {
+            "enabled": true,
+            "url": "https://github.com/autowarefoundation/autoware/releases.atom",
+            "format": "atom"
+          },
+          "focus_areas": ["自动驾驶开源", "ROS2"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "Autoware 自动驾驶开源项目"
+        },
+        {
+          "id": "github_apollo",
+          "name": "Apollo",
+          "platform": "github",
+          "category": "open-source",
+          "tier": 2,
+          "credibility_score": 85,
+          "urls": {
+            "homepage": "https://github.com/ApolloAuto/apollo",
+            "releases": "https://github.com/ApolloAuto/apollo/releases"
+          },
+          "rss": {
+            "enabled": true,
+            "url": "https://github.com/ApolloAuto/apollo/releases.atom",
+            "format": "atom"
+          },
+          "focus_areas": ["百度 Apollo", "自动驾驶开源"],
+          "enabled": true,
+          "manual_review": false,
+          "added_by": "system",
+          "added_at": "2026-03-10",
+          "notes": "百度 Apollo 开源项目"
+        }
+      ]
+    }
+  },
+  "management": {
+    "review_pending": [],
+    "blocked_sources": [],
+    "approved_sources": [
+      "tesla_official",
+      "huawei_consumer",
+      "nio_official",
+      "xpeng_official",
+      "li_auto_official",
+      "xiaomi_auto",
+      "cnevpost",
+      "electrek",
+      "kr36",
+      "github_autoware",
+      "github_apollo"
+    ],
+    "review_rules": {
+      "auto_approve_tier1": true,
+      "auto_approve_rss": true,
+      "manual_review_tier3": true,
+      "block_unverified": true
+    }
+  }
+}
