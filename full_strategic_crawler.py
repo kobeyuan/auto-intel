@@ -52,6 +52,7 @@ class IntelligenceCrawler:
                 snippet_tag = result.find('a', class_='result__snippet')
                 if title_tag:
                     title = title_tag.get_text().strip()
+                    link = title_tag['href']
                     snippet = snippet_tag.get_text().strip() if snippet_tag else ""
 
                     # 严格时效性过滤：如果是 GTC 相关，必须包含 2026
@@ -59,9 +60,15 @@ class IntelligenceCrawler:
                         if "2026" not in title and "2026" not in snippet:
                             continue
 
+                    # 来源过滤：过滤掉已知无法打开或质量差的来源
+                    forbidden_domains = ["newtalk.tw", "example.com"]
+                    if any(domain in link for domain in forbidden_domains):
+                        print(f"   🚫 过滤受阻来源: {link}")
+                        continue
+
                     results.append({
                         "title": title,
-                        "link": title_tag['href'],
+                        "link": link,
                         "snippet": snippet
                     })
             return results

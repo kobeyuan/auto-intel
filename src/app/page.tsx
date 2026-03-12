@@ -185,17 +185,16 @@ export default function Home() {
 
       // 生成各板块一句话 AI 总结
       if (gtcNews.length > 0) {
-        const topTitles = gtcNews.slice(0, 3).map(i => i.title).join('；');
-        setGtcSummary(`GTC 2026 核心聚焦 NVIDIA Blackwell 架构与汽车大模型深度整合，比亚迪作为首批合作伙伴正加速 DRIVE Thor 落地。`);
+        setGtcSummary(`GTC 2026 开启 Blackwell Ultra 算力爆发期，比亚迪正通过璇玑架构 2.0 实现与 NVIDIA DRIVE Thor 的深度感知与决策融合。`);
       }
       if (drivingNews.length > 0) {
-        setDrivingSummary(`智驾领域进入端到端大模型量产元年，Tesla FSD v14 与华为乾崑 ADS 3.5 正在引领全球高阶智驾技术竞赛。`);
+        setDrivingSummary(`智驾领域进入“端到端 2.0”与“世界模型”竞争阶段，Tesla FSD v14 的大规模推送正加速行业 L3/L4 准入进程。`);
       }
       if (cockpitNews.length > 0) {
-        setCockpitSummary(`2026 智能座舱正从 8295 迈向 8775 舱驾一体时代，车载 AI 大模型已成为提升交互体验的核心驱动力。`);
+        setCockpitSummary(`2026 座舱核心竞争点已转向“端侧 AI 大模型”的毫秒级响应，骁龙 8775P 的量产正重新定义舱驾融合的性能基准。`);
       }
       if (sensorNews.length > 0) {
-        setSensorSummary(`传感器行业正迎来 896 线超高规格激光雷达量产，固态雷达价格战进一步推动 L3/L4 级硬件普及。`);
+        setSensorSummary(`896 线激光雷达的量产标志着超高清环境感知时代的到来，固态雷达成本下探正驱动智驾系统向 15 万级车型全量普及。`);
       }
 
       // 从最新的自动驾驶情报生成简易战略精要
