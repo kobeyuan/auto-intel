@@ -57,7 +57,16 @@ class IntelligenceCrawler:
 
                     # 严格时效性过滤：如果是 GTC 相关，必须包含 2026
                     if "gtc" in query.lower() or "nvidia" in query.lower():
+                        # 检查标题或摘要是否包含 2026，且不包含过时的 2024/2025 (除非是对比)
                         if "2026" not in title and "2026" not in snippet:
+                            continue
+                        if ("2024" in title or "2025" in title) and "2026" not in title:
+                            continue
+
+                    # 针对 GTC 资讯的去噪：如果内容过于聚焦旧的 Thor 芯片发布，则过滤
+                    if category == "gtc-insight" and ("Thor" in title or "芯片" in title):
+                        # 如果只提到芯片而没有提到 2026 的新进展/Blackwell/战略，则过滤
+                        if not any(k in (title + snippet) for k in ["Blackwell", "B300", "2026", "Strategic", "Keynote"]):
                             continue
 
                     # 来源过滤：过滤掉已知无法打开或质量差的来源
@@ -141,28 +150,31 @@ class IntelligenceCrawler:
         return None
 
     def run_full_update(self):
-        # 针对各板块的搜索矩阵 (重点强化 2026 时效性)
+        # 针对各板块的搜索矩阵 (重点强化 2026 时效性 & 多元化洞察)
+        # 移除过度聚焦 Thor 芯片的查询，转向全方位 GTC 战略洞察
         search_matrix = [
-            # GTC 专题 (中文搜索，强制 2026)
-            {"query": "NVIDIA GTC 2026 行业资讯 中文", "category": "gtc-insight"},
-            {"query": "英伟达 GTC 2026 比亚迪 战略合作", "category": "gtc-insight"},
-            {"query": "NVIDIA DRIVE Thor 2026 量产计划", "category": "gtc-insight"},
-            {"query": "Blackwell GPU 汽车大模型 训练 2026", "category": "gtc-insight"},
+            # GTC 专题 (多元化战略资讯)
+            {"query": "NVIDIA GTC 2026 Jensen Huang keynote highlights", "category": "gtc-insight"},
+            {"query": "英伟达 GTC 2026 全球 AI 战略 趋势", "category": "gtc-insight"},
+            {"query": "NVIDIA Blackwell Ultra B300 架构 细节 2026", "category": "gtc-insight"},
+            {"query": "GTC 2026 具身智能 机器人 Isaac 平台 最新", "category": "gtc-insight"},
+            {"query": "NVIDIA Omniverse 2026 工业数字孪生 汽车制造", "category": "gtc-insight"},
+            {"query": "GTC 2026 AI Agents NIMs 企业级应用", "category": "gtc-insight"},
 
-            # 自动驾驶 (强化时效)
-            {"query": "2026年 自动驾驶 端到端 行业最新趋势", "category": "autonomous-driving"},
-            {"query": "Tesla FSD v14 2026 最新版本 功能", "category": "autonomous-driving"},
-            {"query": "华为 乾崑 ADS 3.5 最新资讯", "category": "autonomous-driving"},
-            {"query": "小米 SU7 智驾 2026 最新推送", "category": "autonomous-driving"},
+            # 自动驾驶 (端到端与大模型)
+            {"query": "Tesla FSD v14 2026 最新评价 体验", "category": "autonomous-driving"},
+            {"query": "华为 乾崑 ADS 3.5 4.0 路线图 2026", "category": "autonomous-driving"},
+            {"query": "2026 端到端 自动驾驶 算法 架构 突破", "category": "autonomous-driving"},
+            {"query": "小米 SU7 Ultra 智驾系统 2026 进展", "category": "autonomous-driving"},
 
             # 智能座舱
-            {"query": "2026 智能座舱 芯片 8775 最新应用", "category": "smart-cockpit"},
-            {"query": "车载 AI 大模型 交互 2026 趋势", "category": "smart-cockpit"},
-            {"query": "鸿蒙座舱 5.0 2026 最新进展", "category": "smart-cockpit"},
+            {"query": "骁龙 8775P 舱驾一体 2026 首发车型", "category": "smart-cockpit"},
+            {"query": "车载 端侧 大模型 2026 落地 厂商", "category": "smart-cockpit"},
+            {"query": "鸿蒙座舱 5.0 原生鸿蒙 汽车 生态 2026", "category": "smart-cockpit"},
 
             # 传感器/前沿
-            {"query": "华为 896线 激光雷达 2026 最新参数", "category": "sensors"},
-            {"query": "192线 固态激光雷达 价格战 2026", "category": "sensors"}
+            {"query": "华为 896线 激光雷达 尊界 S800 搭载 2026", "category": "sensors"},
+            {"query": "千线级 激光雷达 2026 行业 排名", "category": "sensors"}
         ]
 
         all_items = []
