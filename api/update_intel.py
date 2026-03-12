@@ -110,6 +110,7 @@ def generate_search_matrix() -> List[Dict[str, Any]]:
         "autonomous-driving": ["智能驾驶", "自动驾驶", "智驾方案", "ADAS"],
         "sensors": ["激光雷达", "毫米波雷达", "视觉传感器", "车载芯片"],
         "ota": ["OTA升级", "固件更新", "汽车软件更新"],
+        "gtc-insight": ["NVIDIA GTC 2026", "比亚迪 智能化 GTC", "DRIVE Thor BYD", "比亚迪 璇玑架构"],
         "sentiment": ["智驾评价", "自动驾驶体验", "智能驾驶口碑"],
     }
 
@@ -184,6 +185,12 @@ def generate_search_matrix() -> List[Dict[str, Any]]:
         "下一代 自动驾驶",
         "L4 商业化 最新进展",
         "端到端 量产 最新",
+        # GTC 2026 专项
+        "GTC 2026 自动驾驶",
+        "NVIDIA GTC 2026 汽车",
+        "比亚迪 GTC 2026 合作",
+        "BYD NVIDIA DRIVE Thor",
+        "比亚迪 智能化 战略 GTC",
         # 新增：热门车型和品牌
         "Tesla FSD v14 最新版本",
         "Grok AI 整合 车机",

@@ -120,6 +120,7 @@ export default function Home() {
   const [drivingNews, setDrivingNews] = useState<IntelligenceItem[]>([])
   const [sensorNews, setSensorNews] = useState<IntelligenceItem[]>([])
   const [otaNews, setOtaNews] = useState<IntelligenceItem[]>([])
+  const [gtcNews, setGtcNews] = useState<IntelligenceItem[]>([])
   const [sentiments, setSentiments] = useState<IntelligenceItem[]>([])
   const [strategicSummary, setStrategicSummary] = useState<StrategicSummary | null>(null)
 
@@ -158,6 +159,7 @@ export default function Home() {
         { category: 'autonomous-driving', setter: setDrivingNews },
         { category: 'sensors', setter: setSensorNews },
         { category: 'ota', setter: setOtaNews },
+        { category: 'gtc-insight', setter: setGtcNews },
         { category: 'sentiment', setter: setSentiments }
       ].map(({ category, setter }) =>
         dbClient
@@ -409,6 +411,36 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* GTC 2026 专题洞察 - 特别关注比亚迪 */}
+            <div className="bg-gradient-to-br from-indigo-900/40 to-blue-900/10 rounded-2xl p-6 border border-indigo-500/40 shadow-lg shadow-indigo-500/10">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
+                    <MonitorSmartphone className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-100">GTC 2026 专题洞察</h2>
+                    <p className="text-xs text-indigo-400">聚焦 NVIDIA GTC 展会 & 比亚迪智能化战略</p>
+                  </div>
+                  <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded border border-indigo-500/30">深度分析</span>
+                </div>
+                <span className="text-xs text-gray-500">{gtcNews.length} 条情报</span>
+              </div>
+
+              {gtcNews.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {gtcNews.map((item) => (
+                    <IntelligenceCard key={item.id} item={item} colorClass="text-indigo-400" />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-10 border border-dashed border-gray-700 rounded-xl text-center">
+                  <p className="text-sm text-gray-500">正在追踪 GTC 2026 预热信息及比亚迪智能化动态...</p>
+                  <p className="text-[10px] text-gray-600 mt-2">关键词：DRIVE Thor, 璇玑架构, AI 算力中心</p>
+                </div>
+              )}
+            </div>
+
             {/* 今日 AI 战略精要 - 置顶看板 */}
             {strategicSummary && (
               <div className="bg-gradient-to-r from-amber-900/30 via-orange-900/20 to-red-900/30 rounded-2xl p-6 border border-amber-500/40 shadow-lg shadow-amber-500/10">
