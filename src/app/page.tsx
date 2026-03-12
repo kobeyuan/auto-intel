@@ -28,6 +28,9 @@ interface IntelligenceItem {
   ai_impact?: string
   ai_focus_points?: string[]
   ai_analyzed?: boolean
+  credibility_tier?: string
+  quality_score?: number
+  verified?: boolean
 }
 
 // AI 战略精要接口
@@ -221,15 +224,31 @@ export default function Home() {
     const hasValidUrl = isValidUrl(item.link)
     const isExpanded = expandedCard === item.id
 
+    // 获取可信度等级标签
+    const getCredibilityLabel = (tier?: string) => {
+      switch (tier) {
+        case 'tier1': return { text: '官方权威', color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
+        case 'tier2': return { text: '专业媒体', color: 'text-blue-400', bg: 'bg-blue-500/10' }
+        default: return { text: '一般来源', color: 'text-gray-400', bg: 'bg-gray-500/10' }
+      }
+    }
+    const cred = getCredibilityLabel(item.credibility_tier)
+
     return (
       <div className={`p-4 rounded-xl bg-gray-900/60 border ${importance.border} hover:border-opacity-80 transition-all group`}>
         {/* 头部：来源、重要性和鲜度 */}
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-400">{item.source}</span>
+            <span className={`text-[10px] px-2 py-1 rounded font-medium ${cred.bg} ${cred.color}`}>{item.source}</span>
             <span className={`text-[10px] px-2 py-1 rounded ${importance.bg} ${importance.color}`}>
               重要度{importance.label}
             </span>
+            {item.quality_score && item.quality_score > 80 && (
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded flex items-center gap-1">
+                <Target className="w-3 h-3" />
+                高可信
+              </span>
+            )}
             {freshness.text && (
               <span className={`text-[10px] px-2 py-1 rounded ${freshness.badge}`}>
                 {freshness.text}
@@ -243,7 +262,14 @@ export default function Home() {
               </span>
             )}
           </div>
-          {getSentimentIcon(item.sentiment)}
+          <div className="flex items-center gap-2">
+            {item.verified && (
+              <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center" title="官方已认证">
+                <span className="text-[10px] text-white">✓</span>
+              </div>
+            )}
+            {getSentimentIcon(item.sentiment)}
+          </div>
         </div>
 
         {/* 时间戳（鲜度） */}

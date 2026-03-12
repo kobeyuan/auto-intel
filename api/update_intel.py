@@ -651,6 +651,10 @@ def fetch_with_depth(query_info: Dict[str, str]) -> List[Dict[str, Any]]:
                 "frontier_keywords": frontier["keywords"],  # 匹配关键词
                 "published_at": res.get("page_age"),  # 发布时间
                 "collected_at": datetime.now().isoformat(),  # 采集时间
+                "credibility_tier": "tier3",         # 默认搜索结果为 tier3
+                "quality_score": frontier["score"],   # 映射前沿分数到质量分数
+                "verified": False,                   # 搜索结果默认未验证
+                "keywords": frontier["keywords"],     # 映射到 keywords 字段
             }
 
             # 合并 AI 分析结果
