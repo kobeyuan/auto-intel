@@ -38,7 +38,9 @@ export default function SourcesManagementPage() {
 
   const fetchSources = async () => {
     try {
-      const response = await fetch('/api/admin/sources');
+      // 兼容本地开发和部署环境
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${baseUrl}/api/admin/sources`);
       const data = await response.json();
       setSources(data.sources || {});
     } catch (error) {
@@ -50,7 +52,8 @@ export default function SourcesManagementPage() {
 
   const toggleSource = async (category: string, sourceId: string, enabled: boolean) => {
     try {
-      await fetch('/api/admin/sources', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      await fetch(`${baseUrl}/api/admin/sources`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'toggle', category, sourceId, enabled })

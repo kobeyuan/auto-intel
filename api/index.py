@@ -25,6 +25,8 @@ class handler(BaseHTTPRequestHandler):
             self._handle_update_intel()
         elif path == '/api/rss_collect':
             self._handle_rss_collect()
+        elif path == '/api/admin/sources':
+            self._handle_admin_sources()
         elif path == '/api/health':
             self._handle_health()
         else:
@@ -32,7 +34,49 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """处理 POST 请求"""
-        self._send_json(405, {"error": "Method Not Allowed"})
+        path = self.path
+        if path == '/api/admin/sources':
+            self._handle_admin_sources_post()
+        else:
+            self._send_json(405, {"error": "Method Not Allowed"})
+
+    def _handle_admin_sources(self):
+        """获取数据源配置"""
+        try:
+            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'data_sources.json')
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            self._send_json(200, config)
+        except Exception as e:
+            self._send_json(500, {"error": str(e)})
+
+    def _handle_admin_sources_post(self):
+        """更新数据源配置"""
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
+
+            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'data_sources.json')
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+
+            action = post_data.get('action')
+            if action == 'toggle':
+                category = post_data.get('category')
+                source_id = post_data.get('sourceId')
+                enabled = post_data.get('enabled')
+
+                for source in config['sources'].get(category, {}).get('sources', []):
+                    if source['id'] == source_id:
+                        source['enabled'] = enabled
+                        break
+
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, ensure_ascii=False, indent=2)
+
+            self._send_json(200, {"status": "success"})
+        except Exception as e:
+            self._send_json(500, {"error": str(e)})
 
     def _handle_update_intel(self):
         """处理情报采集"""

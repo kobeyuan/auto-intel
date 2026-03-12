@@ -14,9 +14,10 @@ export default function ManualUpdatePage() {
     setResult(null);
 
     try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const endpoint = type === 'full'
-        ? '/api/update_intel'
-        : '/api/rss_collect';
+        ? `${baseUrl}/api/update_intel`
+        : `${baseUrl}/api/rss_collect`;
 
       const response = await fetch(endpoint, { method: 'GET' });
       const data = await response.json();
