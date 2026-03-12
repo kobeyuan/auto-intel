@@ -25,29 +25,128 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 class IntelligenceCrawler:
     def __init__(self):
         self.session = requests.Session()
-        if HTTP_PROXY:
+        # 移除强制代理，改用动态检测，防止 ProxyError 导致崩溃
+        if HTTP_PROXY and os.environ.get("USE_PROXY", "true").lower() == "true":
             self.session.proxies = {"http": HTTP_PROXY, "https": HTTP_PROXY}
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         })
 
     def free_search(self, query: str, category: str = None) -> List[Dict[str, str]]:
-        """使用 DuckDuckGo 免费搜索"""
+        """使用 DuckDuckGo 免费搜索 (增加多来源回退)"""
         print(f"🔍 搜索: {query}")
+
+        # 尝试来源 1: DuckDuckGo HTML
+        results = self._search_duckduckgo(query, category)
+        if results:
+            return results
+
+        # 尝试来源 2: DuckDuckGo Lite
+        print(f"   ⚠️ DDG HTML 受限，尝试 DuckDuckGo Lite...")
+        time.sleep(3)
+        results = self._search_duckduckgo_lite(query, category)
+        if results:
+            return results
+
+        # 尝试来源 3: 百度资讯 (作为中文来源回退)
+        print(f"   ⚠️ DDG 全面受限，尝试 百度资讯...")
+        time.sleep(2)
+        return self._search_baidu_news(query, category)
+
+    def _search_baidu_news(self, query: str, category: str = None) -> List[Dict[str, str]]:
+        """百度资讯回退方案"""
+        url = f"https://www.baidu.com/s?tn=news&word={query}"
+        try:
+            # 百度搜索不强制使用代理
+            proxies = None
+            response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15, proxies=proxies)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
+            results = []
+            for item in soup.find_all('div', class_='result-op'):
+                if len(results) >= 5: break
+                title_tag = item.find('h3')
+                if title_tag:
+                    title = title_tag.get_text().strip()
+                    link = title_tag.find('a')['href']
+                    snippet = item.get_text().strip()[:200]
+                    results.append({"title": title, "link": link, "snippet": snippet})
+            return results
+        except Exception as e:
+            print(f"   ⚠️ 百度回退失败: {e}")
+            return []
+
+    def _search_duckduckgo_lite(self, query: str, category: str = None) -> List[Dict[str, str]]:
+        """DuckDuckGo Lite 版本的爬取 (通常比 HTML 版更稳定)"""
+        url = "https://lite.duckduckgo.com/lite/"
+        try:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+            response = self.session.post(url, data={"q": query}, headers=headers, timeout=20)
+            if response.status_code != 200:
+                return []
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            results = []
+            # Lite 版的结构是 table
+            rows = soup.find_all('tr')
+            for i in range(0, len(rows), 4): # Lite 版每条结果占几行
+                if len(results) >= 5: break
+                try:
+                    title_row = rows[i]
+                    snippet_row = rows[i+1] if i+1 < len(rows) else None
+
+                    link_tag = title_row.find('a', class_='result-link')
+                    if not link_tag: continue
+
+                    title = link_tag.get_text().strip()
+                    link = link_tag['href']
+
+                    # 清理 DDG 跳转链接
+                    if link.startswith('//duckduckgo.com/l/?kh=-1&uddg='):
+                        link = re.search(r'uddg=([^&]+)', link).group(1)
+                        import urllib.parse
+                        link = urllib.parse.unquote(link)
+
+                    snippet = ""
+                    if snippet_row:
+                        snippet_tag = snippet_row.find('td', class_='result-snippet')
+                        snippet = snippet_tag.get_text().strip() if snippet_tag else ""
+
+                    # 2026 过滤逻辑复用
+                    if "2026" not in title and "2026" not in snippet:
+                        if "gtc" in query.lower() or "nvidia" in query.lower():
+                            continue
+
+                    results.append({"title": title, "link": link, "snippet": snippet})
+                except:
+                    continue
+            return results
+        except Exception as e:
+            print(f"   ⚠️ Lite 搜索失败: {e}")
+            return []
+
+    def _search_duckduckgo(self, query: str, category: str = None) -> List[Dict[str, str]]:
         url = "https://html.duckduckgo.com/html/"
         try:
-            # 增加重试逻辑
-            for _ in range(3):
-                response = self.session.post(url, data={"q": query}, timeout=20)
-                if response.status_code == 200:
-                    break
-                time.sleep(2)
+            # 随机化 User-Agent 进一步降低被封概率
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
+            }
+            response = self.session.post(url, data={"q": f"{query} l:cn-zh"}, headers=headers, timeout=20)
+
+            if response.status_code == 403:
+                print(f"   🚫 DDG 拒绝访问 (403)，可能触发了频率限制")
+                return []
 
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
             results = []
             for i, result in enumerate(soup.find_all('div', class_='result')):
-                if i >= 6: break # 每条查询取前6个结果
+                if i >= 6: break
                 title_tag = result.find('a', class_='result__a')
                 snippet_tag = result.find('a', class_='result__snippet')
                 if title_tag:
@@ -55,34 +154,27 @@ class IntelligenceCrawler:
                     link = title_tag['href']
                     snippet = snippet_tag.get_text().strip() if snippet_tag else ""
 
-                    # 严格时效性过滤：如果是 GTC 相关，必须包含 2026
+                    # 严格时效性过滤
                     if "gtc" in query.lower() or "nvidia" in query.lower():
-                        # 检查标题或摘要是否包含 2026，且不包含过时的 2024/2025 (除非是对比)
                         if "2026" not in title and "2026" not in snippet:
                             continue
                         if ("2024" in title or "2025" in title) and "2026" not in title:
                             continue
 
-                    # 针对 GTC 资讯的去噪：如果内容过于聚焦旧的 Thor 芯片发布，则过滤
+                    # 板块去噪
                     if category == "gtc-insight" and ("Thor" in title or "芯片" in title):
-                        # 如果只提到芯片而没有提到 2026 的新进展/Blackwell/战略，则过滤
                         if not any(k in (title + snippet) for k in ["Blackwell", "B300", "2026", "Strategic", "Keynote"]):
                             continue
 
-                    # 来源过滤：过滤掉已知无法打开或质量差的来源
+                    # 来源过滤
                     forbidden_domains = ["newtalk.tw", "example.com"]
                     if any(domain in link for domain in forbidden_domains):
-                        print(f"   🚫 过滤受阻来源: {link}")
                         continue
 
-                    results.append({
-                        "title": title,
-                        "link": link,
-                        "snippet": snippet
-                    })
+                    results.append({"title": title, "link": link, "snippet": snippet})
             return results
         except Exception as e:
-            print(f"❌ 搜索失败 [{query}]: {e}")
+            print(f"   ⚠️ 内部搜索细节失败: {e}")
             return []
 
     def ai_analyze(self, title: str, snippet: str, category: str) -> Dict[str, Any]:
