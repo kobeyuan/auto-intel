@@ -171,6 +171,23 @@ class IntelligenceCrawler:
                     if any(domain in link for domain in forbidden_domains):
                         continue
 
+                    # 严格 2026+ 及相关关键词过滤 (强化版)
+                    # 1. 如果标题或摘要包含 2024, 2025, 则除非显式包含 2026/2027，否则跳过
+                    content_lower = (title + snippet).lower()
+                    if any(y in content_lower for y in ["2024", "2025"]):
+                        if not any(y in content_lower for y in ["2026", "2027"]):
+                            continue
+
+                    # 2. 彻底屏蔽 user 提到的陈旧话题
+                    stale_topics = ["吴新宙", "极越", "ces 2025", "fsd v12", "fsd v13"]
+                    if any(topic in content_lower for topic in stale_topics):
+                        continue
+
+                    # 3. 针对 Thor 进行更严格的鲜度校验 (必须包含 Blackwell 或 B300 等 2026 核心词)
+                    if "thor" in content_lower:
+                        if not any(k in content_lower for k in ["blackwell", "b300", "2026", "ultra", "keynote"]):
+                            continue
+
                     results.append({"title": title, "link": link, "snippet": snippet})
             return results
         except Exception as e:
