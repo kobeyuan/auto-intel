@@ -3,6 +3,7 @@
 
 import os
 import requests
+import time
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from http.server import BaseHTTPRequestHandler
@@ -61,10 +62,10 @@ COMPETITORS = {
 
 # 核心技术维度
 CORE_TECH = {
-    "End-to-End": ["端到端", "End-to-End", "E2E 自动驾驶", "端到端大模型"],
-    "VLA": ["VLA 模型", "视觉语言动作模型", "Vision Language Action"],
+    "End-to-End": ["端到端", "End-to-End", "E2E 自动驾驶", "端到端 2.0"],
+    "VLA": ["VLA 模型", "视觉语言动作模型", "Vision Language Action", "Grok"],
     "Chiplet": ["芯粒", "Chiplet", "先进封装", "汽车芯片封装"],
-    "Solid-state": ["固态激光雷达", "固态雷达", "Solid-state LiDAR"],
+    "Solid-state": ["固态激光雷达", "896线激光雷达", "Solid-state LiDAR", "192线 激光雷达"],
     "Transformer": ["BEV Transformer", "Transformer 自动驾驶", "BEV 架构"],
     "Foundation Model": ["基础模型", "大模型 自动驾驶", "Foundation Model"],
 }
@@ -84,7 +85,7 @@ STRATEGIC_KEYWORDS = [
     "前瞻", "战略", "规划", "路线图",
     "突破", "颠覆", "革命性", "下一代",
     "量产", "首发", "率先", "领先",
-    "L5", "完全自动驾驶",
+    "L5", "完全自动驾驶", "FSD v14", "Grok AI", "896线", "端到端 2.0",
 ]
 
 
@@ -184,9 +185,12 @@ def generate_search_matrix() -> List[Dict[str, Any]]:
         "L4 商业化 最新进展",
         "端到端 量产 最新",
         # 新增：热门车型和品牌
-        "Tesla FSD 最新版本",
-        "华为 ADS 最新",
-        "小米 SU7 智驾",
+        "Tesla FSD v14 最新版本",
+        "Grok AI 整合 车机",
+        "华为 896线 激光雷达",
+        "ADS 3.5 最新功能",
+        "华为 乾崑 智驾",
+        "小米 SU7 智驾 v2.0",
         "问界 M9 智驾",
         "蔚来 NAD 最新",
         "小鹏 XNGP 最新",
@@ -592,7 +596,7 @@ def generate_daily_strategic_summary(high_value_intel: List[Dict]) -> str:
 
 def fetch_with_depth(query_info: Dict[str, str]) -> List[Dict[str, Any]]:
     """
-    深度搜索：获取过去24小时的高质量链接
+    深度搜索：获取过去24小时的高质量链接 (带重试逻辑)
     """
     query = query_info["query"]
     category = query_info["category"]
@@ -606,75 +610,87 @@ def fetch_with_depth(query_info: Dict[str, str]) -> List[Dict[str, Any]]:
     # 深度搜索参数
     params = {
         "q": query,
-        "count": 10,              # 获取更多结果
-        "freshness": "pd",        # 过去24小时 (past day)
+        "count": 15,              # 增加获取条数
+        "freshness": "pw",        # 从 past day (pd) 改为 past week (pw) 以覆盖更多高质量深度分析
         "search_lang": "zh-hans", # 中文优先
         "text_decorations": "false",
         "safesearch": "off"
     }
 
-    try:
-        session = create_session()
-        response = session.get(
-            "https://api.search.brave.com/res/v1/web/search",
-            headers=headers,
-            params=params,
-            timeout=30  # 增加超时时间
-        )
-        response.raise_for_status()
-        results = response.json().get("web", {}).get("results", [])
+    max_retries = 3
+    retry_delay = 5
 
-        items = []
-        for res in results:
-            title = res.get("title", "")
-            snippet = res.get("description", "")
+    for attempt in range(max_retries):
+        try:
+            session = create_session()
+            response = session.get(
+                "https://api.search.brave.com/res/v1/web/search",
+                headers=headers,
+                params=params,
+                timeout=60  # 增加超时时间到 60s
+            )
+            response.raise_for_status()
+            results = response.json().get("web", {}).get("results", [])
 
-            # 计算前沿程度评分
-            frontier = calculate_frontier_score(title, snippet, dimension)
+            items = []
+            for res in results:
+                title = res.get("title", "")
+                snippet = res.get("description", "")
 
-            # 对高价值情报进行 AI 分析
-            ai_analysis = None
-            if frontier["score"] >= 40:  # 只对高前沿及以上进行 AI 分析
-                print(f"   🤖 AI 分析: {title[:30]}...")
-                ai_analysis = analyze_with_ai(title, snippet)
+                # 计算前沿程度评分
+                frontier = calculate_frontier_score(title, snippet, dimension)
 
-            item = {
-                "title": title,
-                "link": res.get("url"),
-                "snippet": snippet,
-                "source": res.get("meta_url", {}).get("hostname", "Unknown"),
-                "category": category,
-                "dimension": dimension,              # 查询维度
-                "frontier_score": frontier["score"],  # 前沿分数
-                "frontier_level": frontier["level"],  # 前沿等级
-                "frontier_badge": frontier["badge"],  # 徽章
-                "frontier_keywords": frontier["keywords"],  # 匹配关键词
-                "published_at": res.get("page_age"),  # 发布时间
-                "collected_at": datetime.now().isoformat(),  # 采集时间
-                "credibility_tier": "tier3",         # 默认搜索结果为 tier3
-                "quality_score": frontier["score"],   # 映射前沿分数到质量分数
-                "verified": False,                   # 搜索结果默认未验证
-                "keywords": frontier["keywords"],     # 映射到 keywords 字段
-            }
+                # 对高价值情报进行 AI 分析
+                ai_analysis = None
+                if frontier["score"] >= 40:  # 只对高前沿及以上进行 AI 分析
+                    print(f"   🤖 AI 分析: {title[:30]}...")
+                    ai_analysis = analyze_with_ai(title, snippet)
 
-            # 合并 AI 分析结果
-            if ai_analysis:
-                item.update({
-                    "ai_what_is_it": ai_analysis.get("what_is_it"),
-                    "ai_impact": ai_analysis.get("impact"),
-                    "ai_focus_points": ai_analysis.get("focus_points"),
-                    "ai_analyzed": True,
-                    "ai_provider": ai_analysis.get("ai_provider"),
-                    "ai_analysis_time": ai_analysis.get("ai_analysis_time")
-                })
+                item = {
+                    "title": title,
+                    "link": res.get("url"),
+                    "snippet": snippet,
+                    "source": res.get("meta_url", {}).get("hostname", "Unknown"),
+                    "category": category,
+                    "dimension": dimension,              # 查询维度
+                    "frontier_score": frontier["score"],  # 前沿分数
+                    "frontier_level": frontier["level"],  # 前沿等级
+                    "frontier_badge": frontier["badge"],  # 徽章
+                    "frontier_keywords": frontier["keywords"],  # 匹配关键词
+                    "published_at": res.get("page_age"),  # 发布时间
+                    "collected_at": datetime.now().isoformat(),  # 采集时间
+                    "credibility_tier": "tier3",         # 默认搜索结果为 tier3
+                    "quality_score": frontier["score"],   # 映射前沿分数到质量分数
+                    "verified": False,                   # 搜索结果默认未验证
+                    "keywords": frontier["keywords"],     # 映射到 keywords 字段
+                }
 
-            items.append(item)
+                # 合并 AI 分析结果
+                if ai_analysis:
+                    item.update({
+                        "ai_what_is_it": ai_analysis.get("what_is_it"),
+                        "ai_impact": ai_analysis.get("impact"),
+                        "ai_focus_points": ai_analysis.get("focus_points"),
+                        "ai_analyzed": True,
+                        "ai_provider": ai_analysis.get("ai_provider"),
+                        "ai_analysis_time": ai_analysis.get("ai_analysis_time")
+                    })
 
-        return items
+                items.append(item)
 
-    except Exception as e:
-        print(f"⚠️ 搜索失败 [{query}]: {str(e)}")
-        return []
+            return items
+
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            if attempt < max_retries - 1:
+                print(f"   ⚠️ 网络连接超时 ({e}), 正在进行第 {attempt + 2} 次重试 (等待 {retry_delay}s)...")
+                time.sleep(retry_delay)
+                continue
+            else:
+                print(f"   ❌ 搜索失败 [{query}]: 达到最大重试次数")
+                return []
+        except Exception as e:
+            print(f"   ⚠️ 搜索失败 [{query}]: {str(e)}")
+            return []
 
 
 # ==========================================
