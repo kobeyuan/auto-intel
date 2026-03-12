@@ -31,7 +31,7 @@ class IntelligenceCrawler:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         })
 
-    def free_search(self, query: str) -> List[Dict[str, str]]:
+    def free_search(self, query: str, category: str = None) -> List[Dict[str, str]]:
         """使用 DuckDuckGo 免费搜索"""
         print(f"🔍 搜索: {query}")
         url = "https://html.duckduckgo.com/html/"
@@ -179,7 +179,7 @@ class IntelligenceCrawler:
 
         all_items = []
         for task in search_matrix:
-            results = self.free_search(task['query'])
+            results = self.free_search(task['query'], category=task['category'])
             for res in results:
                 print(f"   [分析] {res['title'][:40]}...")
                 analysis = self.ai_analyze(res['title'], res['snippet'], task['category'])
