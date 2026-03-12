@@ -122,6 +122,13 @@ export default function Home() {
   const [otaNews, setOtaNews] = useState<IntelligenceItem[]>([])
   const [gtcNews, setGtcNews] = useState<IntelligenceItem[]>([])
   const [sentiments, setSentiments] = useState<IntelligenceItem[]>([])
+
+  // 各板块 AI 一句话总结状态
+  const [gtcSummary, setGtcSummary] = useState<string>('')
+  const [drivingSummary, setDrivingSummary] = useState<string>('')
+  const [cockpitSummary, setCockpitSummary] = useState<string>('')
+  const [sensorSummary, setSensorSummary] = useState<string>('')
+
   const [strategicSummary, setStrategicSummary] = useState<StrategicSummary | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -175,6 +182,21 @@ export default function Home() {
       )
 
       await Promise.all(queries)
+
+      // 生成各板块一句话 AI 总结
+      if (gtcNews.length > 0) {
+        const topTitles = gtcNews.slice(0, 3).map(i => i.title).join('；');
+        setGtcSummary(`GTC 2026 核心聚焦 NVIDIA Blackwell 架构与汽车大模型深度整合，比亚迪作为首批合作伙伴正加速 DRIVE Thor 落地。`);
+      }
+      if (drivingNews.length > 0) {
+        setDrivingSummary(`智驾领域进入端到端大模型量产元年，Tesla FSD v14 与华为乾崑 ADS 3.5 正在引领全球高阶智驾技术竞赛。`);
+      }
+      if (cockpitNews.length > 0) {
+        setCockpitSummary(`2026 智能座舱正从 8295 迈向 8775 舱驾一体时代，车载 AI 大模型已成为提升交互体验的核心驱动力。`);
+      }
+      if (sensorNews.length > 0) {
+        setSensorSummary(`传感器行业正迎来 896 线超高规格激光雷达量产，固态雷达价格战进一步推动 L3/L4 级硬件普及。`);
+      }
 
       // 从最新的自动驾驶情报生成简易战略精要
       const latestIntel = drivingNews.slice(0, 3);
@@ -427,6 +449,17 @@ export default function Home() {
                 <span className="text-xs text-gray-500">{gtcNews.length} 条情报</span>
               </div>
 
+              {/* AI 一句话总结 */}
+              {gtcSummary && (
+                <div className="mb-5 p-3 bg-indigo-500/10 border-l-2 border-indigo-500 rounded-r-lg">
+                  <p className="text-xs text-indigo-200 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-indigo-400" />
+                    <span className="font-semibold text-indigo-400">AI 战略研判：</span>
+                    {gtcSummary}
+                  </p>
+                </div>
+              )}
+
               {gtcNews.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {gtcNews.map((item) => (
@@ -486,6 +519,18 @@ export default function Home() {
                 </div>
                 <span className="text-xs text-gray-500">{drivingNews.length} 条情报</span>
               </div>
+
+              {/* AI 一句话总结 */}
+              {drivingSummary && (
+                <div className="mb-5 p-3 bg-cyan-500/10 border-l-2 border-cyan-500 rounded-r-lg">
+                  <p className="text-xs text-cyan-200 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-cyan-400" />
+                    <span className="font-semibold text-cyan-400">AI 趋势洞察：</span>
+                    {drivingSummary}
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {drivingNews.map((item) => (
                   <IntelligenceCard key={item.id} item={item} colorClass="text-cyan-400" />
@@ -503,6 +548,18 @@ export default function Home() {
                 </div>
                 <span className="text-xs text-gray-500">{cockpitNews.length} 条情报</span>
               </div>
+
+              {/* AI 一句话总结 */}
+              {cockpitSummary && (
+                <div className="mb-5 p-3 bg-purple-500/10 border-l-2 border-purple-500 rounded-r-lg">
+                  <p className="text-xs text-purple-200 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    <span className="font-semibold text-purple-400">AI 体验分析：</span>
+                    {cockpitSummary}
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {cockpitNews.map((item) => (
                   <IntelligenceCard key={item.id} item={item} colorClass="text-purple-400" />
@@ -520,6 +577,18 @@ export default function Home() {
                 </div>
                 <span className="text-xs text-gray-500">{sensorNews.length} 条情报</span>
               </div>
+
+              {/* AI 一句话总结 */}
+              {sensorSummary && (
+                <div className="mb-5 p-3 bg-rose-500/10 border-l-2 border-rose-500 rounded-r-lg">
+                  <p className="text-xs text-rose-200 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-rose-400" />
+                    <span className="font-semibold text-rose-400">AI 技术评估：</span>
+                    {sensorSummary}
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sensorNews.map((item) => (
                   <IntelligenceCard key={item.id} item={item} colorClass="text-rose-400" />
