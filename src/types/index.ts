@@ -41,20 +41,34 @@ export interface DashboardStats {
   recentSentiments: Sentiment[];
 }
 
-// 行业新闻类型
+// 行业新闻/情报核心类型
 export interface IndustryNews {
   id: string;
   title: string;
-  content: string;
+  content: string; // 对应数据库的 snippet
   source: string;
-  source_url: string;
-  category: 'technology' | 'product' | 'policy' | 'funding' | 'partnership' | 'other';
-  keywords: string[];
+  source_url: string; // 对应数据库的 link
+  category: string;
+  keywords?: string[];
   sentiment: 'positive' | 'neutral' | 'negative';
   importance: 'high' | 'medium' | 'low';
-  published_at: Date;
-  created_at: Date;
+  quality_score?: number;
+  verified?: boolean;
+  metadata?: {
+    tags?: string[];
+    ai_analysis?: {
+      what?: string;
+      impact?: string;
+      focus?: string[];
+    };
+    [key: string]: any;
+  };
+  published_at: string | Date;
+  created_at: string | Date;
 }
+
+// 兼容旧命名的别名 (逐步废弃)
+export type IntelligenceItem = IndustryNews;
 
 // 行业新闻查询参数
 export interface IndustryNewsQuery {

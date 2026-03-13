@@ -19,6 +19,10 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_API_URL = os.environ.get("GEMINI_API_URL", "https://new.lemonapi.site/v1")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "[L]gemini-3-pro-preview")
 
+KIMI_API_KEY = os.environ.get("KIMI_API_KEY")
+KIMI_API_URL = os.environ.get("KIMI_API_URL", "https://api.moonshot.cn/v1")
+KIMI_MODEL = os.environ.get("KIMI_MODEL", "kimi-k2.5")
+
 # 初始化 Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -194,6 +198,83 @@ class IntelligenceCrawler:
             print(f"   ⚠️ 内部搜索细节失败: {e}")
             return []
 
+    def ai_filter(self, title: str, snippet: str) -> Dict[str, Any]:
+        """使用 Kimi AI 作为行业战略总监进行情报过滤打分"""
+        if not KIMI_API_KEY:
+            return {"score": 10, "reason": "KIMI_API_KEY 未配置，默认通过"}
+
+        prompt = f"""
+        作为资深的汽车行业战略总监，请对以下资讯进行情报价值评估。
+
+        【资讯标题】: {title}
+        【内容摘要】: {snippet}
+
+        评分规则 (1-10分):
+        1. 直接打 0 分 (必须过滤):
+           - 消费者导向的降价/促销信息。
+           - 普通媒体车评、试驾体验。
+           - 行业八卦、非战略性新闻。
+        2. 打 8 分以上 (战略价值高):
+           - L3/L4 自动驾驶路测牌照、法规进展。
+           - 电子电气架构 (EE架构) 演进、芯片首发。
+           - 大模型 (VLM/World Model) 上车、AI 算法突破。
+           - 核心高管变动、合资/战略收购。
+        3. 其他行业动态按其对比亚迪战略研判的参考价值打分。
+
+        请严格以 JSON 格式输出，不要包含 Markdown 标签:
+        {{
+            "score": 评分数字,
+            "reason": "简短的打分理由"
+        }}
+        """
+
+        try:
+            for attempt in range(2):
+                resp = requests.post(
+                    f"{KIMI_API_URL}/chat/completions",
+                    headers={"Authorization": f"Bearer {KIMI_API_KEY}", "Content-Type": "application/json"},
+                    json={
+                        "model": KIMI_MODEL,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.1
+                    },
+                    timeout=30
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    content = data['choices'][0]['message']['content']
+
+                    # 强力解析逻辑：处理 Markdown 块或脏数据
+                    json_str = content
+                    if "```" in content:
+                        # 提取第一个 JSON 块
+                        blocks = re.findall(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+                        if blocks:
+                            json_str = blocks[0]
+                        else:
+                            # 尝试正则匹配最外层的 {}
+                            match = re.search(r'(\{.*\})', content, re.DOTALL)
+                            if match:
+                                json_str = match.group(1)
+
+                    try:
+                        return json.loads(json_str)
+                    except json.JSONDecodeError:
+                        # 最后的尝试：提取标题和分数
+                        score_match = re.search(r'"score":\s*(\d+)', content)
+                        reason_match = re.search(r'"reason":\s*"([^"]+)"', content)
+                        if score_match:
+                            return {
+                                "score": int(score_match.group(1)),
+                                "reason": reason_match.group(1) if reason_match else "解析失败，仅提取到分数"
+                            }
+                else:
+                    print(f"   ⚠️ Kimi 响应错误 ({resp.status_code}): {resp.text}")
+                time.sleep(2)
+        except Exception as e:
+            print(f"   ⚠️ AI 过滤失败: {e}")
+        return {"score": 5, "reason": "分析异常，默认中等分数"}
+
     def ai_analyze(self, title: str, snippet: str, category: str) -> Dict[str, Any]:
         """AI 深度分析：针对不同类别使用不同视角，中文输出"""
         if not GEMINI_API_KEY:
@@ -246,13 +327,36 @@ class IntelligenceCrawler:
                 if resp.status_code == 200:
                     data = resp.json()
                     content = data['choices'][0]['message']['content']
-                    match = re.search(r'\{.*\}', content, re.DOTALL)
-                    if match:
-                        return json.loads(match.group())
+
+                    # 强力解析逻辑：处理 Markdown 块或脏数据
+                    json_str = content
+                    if "```" in content:
+                        # 提取第一个 JSON 块
+                        blocks = re.findall(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+                        if blocks:
+                            json_str = blocks[0]
+                        else:
+                            # 尝试正则匹配最外层的 {}
+                            match = re.search(r'(\{.*\})', content, re.DOTALL)
+                            if match:
+                                json_str = match.group(1)
+
+                    try:
+                        return json.loads(json_str)
+                    except json.JSONDecodeError:
+                        # 最后的尝试：提取标题和分数
+                        score_match = re.search(r'"score":\s*(\d+)', content)
+                        reason_match = re.search(r'"reason":\s*"([^"]+)"', content)
+                        if score_match:
+                            return {
+                                "score": int(score_match.group(1)),
+                                "reason": reason_match.group(1) if reason_match else "解析失败，仅提取到分数"
+                            }
                 elif resp.status_code == 503:
                     print(f"   ⏳ AI 服务繁忙 (503), 第 {attempt+1} 次重试...")
                     time.sleep(5)
                 else:
+                    print(f"   ⚠️ Kimi 响应错误 ({resp.status_code}): {resp.text}")
                     break
         except Exception as e:
             print(f"   ⚠️ AI 分析失败: {e}")
@@ -290,7 +394,18 @@ class IntelligenceCrawler:
         for task in search_matrix:
             results = self.free_search(task['query'], category=task['category'])
             for res in results:
-                print(f"   [分析] {res['title'][:40]}...")
+                # 1. 强力 AI 过滤层
+                print(f"   [过滤] {res['title'][:40]}...")
+                filter_res = self.ai_filter(res['title'], res['snippet'])
+                score = filter_res.get('score', 0)
+
+                if score < 7:
+                    print(f"   🗑️ 过滤丢弃 (得分: {score}): {filter_res.get('reason')}")
+                    continue
+
+                print(f"   💎 高价值情报 (得分: {score}): {res['title'][:40]}...")
+
+                # 2. AI 深度研判 (仅对通过过滤的数据进行分析)
                 analysis = self.ai_analyze(res['title'], res['snippet'], task['category'])
 
                 # 构建最终展示的 snippet (三段式中文)
@@ -304,15 +419,30 @@ class IntelligenceCrawler:
                         continue
                     display_snippet = res['snippet']
 
+                # 提取关键词作为战略标签
+                tags = []
+                if analysis and isinstance(analysis, dict):
+                    tags = analysis.get('focus', [])
+
+                # 注入 2026 核心标签
+                if "2026" in res['title'] or "2026" in res['snippet']:
+                    tags.append("2026_TREND")
+
                 item = {
                     "title": res['title'],
                     "link": res['link'],
                     "snippet": display_snippet,
                     "category": task['category'],
                     "source": "GTC/Strategic",
-                    "quality_score": 98 if analysis else 70,
+                    "quality_score": score,
+                    "sentiment": analysis.get('sentiment', 'neutral') if isinstance(analysis, dict) else 'neutral',
+                    "importance": "high" if score >= 8.5 else "medium",
                     "created_at": datetime.now().isoformat(),
-                    "verified": True if analysis else False
+                    "verified": True if analysis else False,
+                    "metadata": {
+                        "tags": tags[:5],
+                        "ai_raw": analysis if isinstance(analysis, dict) else None
+                    }
                 }
                 all_items.append(item)
                 time.sleep(1.5)

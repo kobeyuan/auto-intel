@@ -1,641 +1,293 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Brain, RefreshCw, ExternalLink, Car, MonitorSmartphone, Radar, CloudDownload, MessageSquareText, TrendingUp, TrendingDown, Minus, Sparkles, Target, Zap, Activity } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
-
-// 情报数据接口
-interface IntelligenceItem {
-  id: string
-  title: string
-  snippet: string
-  summary?: string
-  source: string
-  link: string
-  category: string
-  sentiment: 'positive' | 'neutral' | 'negative'
-  importance: 'high' | 'medium' | 'low'
-  key_insights?: string[]
-  related_tech?: string[]
-  impact?: string
-  created_at: string
-  publish_time?: string
-  // AI 分析字段
-  frontier_score?: number
-  frontier_level?: string
-  frontier_badge?: string
-  ai_what_is_it?: string
-  ai_impact?: string
-  ai_focus_points?: string[]
-  ai_analyzed?: boolean
-  credibility_tier?: string
-  quality_score?: number
-  verified?: boolean
-}
-
-// AI 战略精要接口
-interface StrategicSummary {
-  id: string
-  title: string
-  content: string
-  overview: string
-  intelligence_count: number
-  created_at: string
-}
-
-// 格式化相对时间（确保鲜度显示）
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffHours < 1) return '刚刚'
-  if (diffHours < 24) return `${diffHours}小时前`
-  if (diffDays === 1) return '昨天'
-  if (diffDays < 7) return `${diffDays}天前`
-  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
-}
-
-// 获取鲜度样式（越新越突出）
-function getFreshnessStyle(dateString: string): { text: string; color: string; badge: string } {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-
-  if (diffHours < 6) return { text: '🔥 最新', color: 'text-red-400', badge: 'bg-red-500/20 text-red-400' }
-  if (diffHours < 24) return { text: '⚡ 今日', color: 'text-yellow-400', badge: 'bg-yellow-500/20 text-yellow-400' }
-  if (diffHours < 72) return { text: '📌 近期', color: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-400' }
-  return { text: '', color: 'text-gray-500', badge: 'bg-gray-800 text-gray-500' }
-}
-
-// 验证URL是否有效
-function isValidUrl(url: string): boolean {
-  if (!url || url === '') return false
-  if (url.startsWith('https://example.com')) return false
-  if (url.startsWith('http://example.com')) return false
-  try {
-    new URL(url)
-    return true
-  } catch {
-    return false
-  }
-}
-
-// 解析AI分析内容（从snippet中提取三段式结构）
-function parseAIAnalysis(snippet: string): { what: string; impact: string; focus: string[] } | null {
-  if (!snippet.includes('【AI分析】')) return null
-
-  const parts = snippet.split(/\\n|\\r\\n/)
-  let what = ''
-  let impact = ''
-  const focus: string[] = []
-
-  let currentSection = ''
-
-  for (const line of parts) {
-    if (line.includes('这是什么？')) {
-      currentSection = 'what'
-      what = line.replace(/.*这是什么？/, '').trim()
-    } else if (line.includes('有什么影响？')) {
-      currentSection = 'impact'
-      impact = line.replace(/.*有什么影响？/, '').trim()
-    } else if (line.includes('关注要点：')) {
-      currentSection = 'focus'
-    } else if (currentSection === 'focus' && line.trim().match(/^\d+\./)) {
-      focus.push(line.replace(/^\d+\./, '').trim())
-    } else if (currentSection === 'what' && line.trim()) {
-      what += ' ' + line.trim()
-    } else if (currentSection === 'impact' && line.trim()) {
-      impact += ' ' + line.trim()
-    }
-  }
-
-  return what ? { what, impact, focus } : null
-}
+import { useState, useEffect, useMemo } from 'react'
+import {
+  LayoutDashboard,
+  Cpu,
+  ShieldAlert,
+  Zap,
+  Activity,
+  RefreshCw,
+  Brain,
+  Car,
+  Radar,
+  Search,
+  FileDown,
+  ChevronDown
+} from 'lucide-react'
+import { IntelligenceCard } from '@/components/IntelligenceCard'
+import { ExecutiveBriefing } from '@/components/ExecutiveBriefing'
+import { TagFilterBar } from '@/components/TagFilterBar'
+import { GlobalSynthesisPanel } from '@/components/GlobalSynthesisPanel'
+import { TrendRadarChart } from '@/components/TrendRadarChart'
+import { IndustryNews } from '@/types'
+import { supabase } from '@/lib/supabase'
+import { generateDailySynthesis, generateMarkdownReport } from '@/utils/intelligence'
 
 export default function Home() {
-  const [cockpitNews, setCockpitNews] = useState<IntelligenceItem[]>([])
-  const [drivingNews, setDrivingNews] = useState<IntelligenceItem[]>([])
-  const [sensorNews, setSensorNews] = useState<IntelligenceItem[]>([])
-  const [otaNews, setOtaNews] = useState<IntelligenceItem[]>([])
-  const [gtcNews, setGtcNews] = useState<IntelligenceItem[]>([])
-  const [sentiments, setSentiments] = useState<IntelligenceItem[]>([])
-
-  // 各板块 AI 一句话总结状态
-  const [gtcSummary, setGtcSummary] = useState<string>('')
-  const [drivingSummary, setDrivingSummary] = useState<string>('')
-  const [cockpitSummary, setCockpitSummary] = useState<string>('')
-  const [sensorSummary, setSensorSummary] = useState<string>('')
-
-  const [strategicSummary, setStrategicSummary] = useState<StrategicSummary | null>(null)
-
+  const [intelligence, setIntelligence] = useState<IndustryNews[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<string>('')
-  const [supabase, setSupabase] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [expandedCard, setExpandedCard] = useState<string | null>(null)
+  const [dailySummary, setDailySummary] = useState('')
 
-  useEffect(() => {
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      if (!supabaseUrl || !supabaseAnonKey) {
-        setError('Supabase 配置缺失，请检查环境变量')
-        return
-      }
-      const client = createClient(supabaseUrl, supabaseAnonKey)
-      setSupabase(client)
-      loadData(client)
-    } catch (err) {
-      setError('初始化失败')
-    }
-  }, [])
+  // 过滤状态
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showExportModal, setShowExportModal] = useState(false)
 
-  const loadData = async (client?: any) => {
+  const fetchData = async () => {
     try {
       setLoading(true)
-      const dbClient = client || supabase
-      if (!dbClient) return
+      const { data, error } = await supabase
+        .from('industry_intelligence')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
 
-      // 获取各类别数据，包含AI分析字段
-      const queries = [
-        { category: 'smart-cockpit', setter: setCockpitNews },
-        { category: 'autonomous-driving', setter: setDrivingNews },
-        { category: 'sensors', setter: setSensorNews },
-        { category: 'ota', setter: setOtaNews },
-        { category: 'gtc-insight', setter: setGtcNews },
-        { category: 'sentiment', setter: setSentiments }
-      ].map(({ category, setter }) =>
-        dbClient
-          .from('industry_intelligence')
-          .select('*')
-          .eq('category', category)
-          .order('created_at', { ascending: false })
-          .limit(8)
-          .then((res: any) => {
-            setter(res.data || [])
-            return res
-          })
-      )
+      if (error) throw error
 
-      await Promise.all(queries)
+      const formatted: IndustryNews[] = (data || []).map(item => ({
+        id: item.id,
+        title: item.title,
+        content: item.snippet,
+        source: item.source,
+        source_url: item.link,
+        category: item.category,
+        sentiment: item.sentiment || 'neutral',
+        importance: item.importance || (item.quality_score >= 8.5 ? 'high' : 'medium'),
+        quality_score: item.quality_score,
+        verified: item.verified,
+        metadata: item.metadata,
+        created_at: item.created_at,
+        published_at: item.created_at
+      }))
 
-      // 生成各板块一句话 AI 总结
-      if (gtcNews.length > 0) {
-        setGtcSummary(`GTC 2026 开启 Blackwell Ultra 算力爆发期，比亚迪正通过璇玑架构 2.0 实现与 NVIDIA DRIVE Thor 的深度感知与决策融合。`);
-      }
-      if (drivingNews.length > 0) {
-        setDrivingSummary(`智驾领域进入“端到端 2.0”与“世界模型”竞争阶段，Tesla FSD v14 的大规模推送正加速行业 L3/L4 准入进程。`);
-      }
-      if (cockpitNews.length > 0) {
-        setCockpitSummary(`2026 座舱核心竞争点已转向“端侧 AI 大模型”的毫秒级响应，骁龙 8775P 的量产正重新定义舱驾融合的性能基准。`);
-      }
-      if (sensorNews.length > 0) {
-        setSensorSummary(`896 线激光雷达的量产标志着超高清环境感知时代的到来，固态雷达成本下探正驱动智驾系统向 15 万级车型全量普及。`);
-      }
+      setIntelligence(formatted)
 
-      // 从最新的自动驾驶情报生成简易战略精要
-      const latestIntel = drivingNews.slice(0, 3);
-      if (latestIntel.length > 0) {
-        const keyTopics = latestIntel.map(i => i.title?.replace(/\[.*?\]/g, '').trim()).filter(Boolean);
-        const mockSummary = `今日智能驾驶领域重点关注：${keyTopics.join('；')}。建议持续跟踪端到端技术进展、法规政策变化及头部厂商竞争动态。`;
-        setStrategicSummary({
-          id: 'mock-1',
-          title: '今日 AI 战略精要',
-          content: mockSummary,
-          overview: mockSummary.slice(0, 50),
-          intelligence_count: latestIntel.length,
-          created_at: new Date().toISOString()
-        });
-      }
+      // 生成每日综述
+      const summary = await generateDailySynthesis(formatted)
+      setDailySummary(summary)
 
-      setLastUpdate(new Date().toLocaleString('zh-CN'))
+      setLastUpdate(new Date().toLocaleTimeString('zh-CN'))
     } catch (err) {
-      console.error(err)
-      setError('加载失败: 请检查数据库连接')
+      console.error('获取情报失败:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  // 获取重要性颜色和图标
-  const getImportanceStyle = (importance: string) => {
-    switch (importance) {
-      case 'high': return { color: 'text-red-400', bg: 'bg-red-900/30', border: 'border-red-500/50', label: '高' }
-      case 'medium': return { color: 'text-yellow-400', bg: 'bg-yellow-900/30', border: 'border-yellow-500/50', label: '中' }
-      default: return { color: 'text-gray-400', bg: 'bg-gray-800', border: 'border-gray-600', label: '低' }
-    }
-  }
+  useEffect(() => {
+    fetchData()
+  }, [])
 
-  // 获取情感图标
-  const getSentimentIcon = (sentiment: string) => {
-    switch (sentiment) {
-      case 'positive': return <TrendingUp className="w-4 h-4 text-emerald-400" />
-      case 'negative': return <TrendingDown className="w-4 h-4 text-rose-400" />
-      default: return <Minus className="w-4 h-4 text-gray-400" />
-    }
-  }
-
-  // 情报卡片组件
-  const IntelligenceCard = ({ item, colorClass }: { item: IntelligenceItem; colorClass: string }) => {
-    const importance = getImportanceStyle(item.importance)
-    const freshness = getFreshnessStyle(item.publish_time || item.created_at)
-    const timeText = formatRelativeTime(item.publish_time || item.created_at)
-    const hasValidUrl = isValidUrl(item.link)
-    const isExpanded = expandedCard === item.id
-
-    // 获取可信度等级标签
-    const getCredibilityLabel = (tier?: string) => {
-      switch (tier) {
-        case 'tier1': return { text: '官方权威', color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
-        case 'tier2': return { text: '专业媒体', color: 'text-blue-400', bg: 'bg-blue-500/10' }
-        default: return { text: '一般来源', color: 'text-gray-400', bg: 'bg-gray-500/10' }
+  // 1. 提取去重标签
+  const allTags = useMemo(() => {
+    const tagsSet = new Set<string>()
+    intelligence.forEach(item => {
+      if (item.metadata?.tags && Array.isArray(item.metadata.tags)) {
+        item.metadata.tags.forEach(t => tagsSet.add(t))
       }
-    }
-    const cred = getCredibilityLabel(item.credibility_tier)
+      if (item.keywords && Array.isArray(item.keywords)) {
+        item.keywords.forEach(t => tagsSet.add(t))
+      }
+    })
+    return Array.from(tagsSet).filter(t => t.length > 1 && t !== '2026_TREND')
+  }, [intelligence])
 
-    return (
-      <div className={`p-4 rounded-xl bg-gray-900/60 border ${importance.border} hover:border-opacity-80 transition-all group`}>
-        {/* 头部：来源、重要性和鲜度 */}
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-[10px] px-2 py-1 rounded font-medium ${cred.bg} ${cred.color}`}>{item.source}</span>
-            <span className={`text-[10px] px-2 py-1 rounded ${importance.bg} ${importance.color}`}>
-              重要度{importance.label}
-            </span>
-            {item.quality_score && item.quality_score > 80 && (
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded flex items-center gap-1">
-                <Target className="w-3 h-3" />
-                高可信
-              </span>
-            )}
-            {freshness.text && (
-              <span className={`text-[10px] px-2 py-1 rounded ${freshness.badge}`}>
-                {freshness.text}
-              </span>
-            )}
-            {/* AI 分析标识 */}
-            {item.ai_analyzed && (
-              <span className="text-[10px] px-2 py-1 rounded bg-purple-500/20 text-purple-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                AI 已分析
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {item.verified && (
-              <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center" title="官方已认证">
-                <span className="text-[10px] text-white">✓</span>
-              </div>
-            )}
-            {getSentimentIcon(item.sentiment)}
-          </div>
-        </div>
+  // 2. 筛选 Top 3 高价值情报 (用于 ExecutiveBriefing)
+  const topFocusItems = useMemo(() => {
+    return [...intelligence]
+      .filter(item => item.importance === 'high' || (item.quality_score && item.quality_score >= 8.5))
+      .sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0))
+      .slice(0, 3)
+  }, [intelligence])
 
-        {/* 时间戳（鲜度） */}
-        <div className="flex items-center gap-1 mb-2">
-          <span className={`text-[10px] ${freshness.color}`}>{timeText}</span>
-        </div>
+  // 3. 筛选情报流 (用于 Timeline)
+  const filteredTimeline = useMemo(() => {
+    return intelligence.filter(item => {
+      const matchesTag = !selectedTag ||
+        (item.metadata?.tags?.includes(selectedTag)) ||
+        (item.keywords?.includes(selectedTag)) ||
+        (item.title.includes(selectedTag))
 
-        {/* 标题 */}
-        <h3 className="font-medium text-sm text-gray-200 mb-2 line-clamp-2 group-hover:text-cyan-400 transition-colors">
-          {item.title}
-        </h3>
+      const matchesSearch = !searchQuery ||
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.content.toLowerCase().includes(searchQuery.toLowerCase())
 
-        {/* AI 情报综述 - 三个核心问题 */}
-        {(() => {
-          const aiAnalysis = parseAIAnalysis(item.snippet)
-          if (!aiAnalysis) return null
+      return matchesTag && matchesSearch
+    })
+  }, [intelligence, selectedTag, searchQuery])
 
-          return (
-            <div className="mb-3 space-y-2">
-              {/* AI 已分析标识 */}
-              <div className="flex items-center gap-1 mb-2">
-                <Sparkles className="w-3 h-3 text-purple-400" />
-                <span className="text-[10px] text-purple-400">AI 情报分析</span>
-              </div>
-
-              {/* 问题1：这是什么？ */}
-              <div className="p-2 bg-blue-900/20 rounded border border-blue-500/20">
-                <div className="flex items-center gap-1 mb-1">
-                  <span className="text-[10px] font-semibold text-blue-400">❶ 这是什么？</span>
-                </div>
-                <p className="text-xs text-gray-300 line-clamp-2">{aiAnalysis.what}</p>
-              </div>
-
-              {/* 展开后显示更多 */}
-              {isExpanded && (
-                <>
-                  {/* 问题2：对我们有什么影响？ */}
-                  <div className="p-2 bg-amber-900/20 rounded border border-amber-500/20">
-                    <div className="flex items-center gap-1 mb-1">
-                      <span className="text-[10px] font-semibold text-amber-400">❷ 有什么影响？</span>
-                    </div>
-                    <p className="text-xs text-gray-300">{aiAnalysis.impact}</p>
-                  </div>
-
-                  {/* 问题3：建议关注点 */}
-                  {aiAnalysis.focus.length > 0 && (
-                    <div className="p-2 bg-emerald-900/20 rounded border border-emerald-500/20">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-[10px] font-semibold text-emerald-400">❸ 关注要点</span>
-                      </div>
-                      <ul className="text-xs text-gray-300 space-y-1">
-                        {aiAnalysis.focus.map((point, idx) => (
-                          <li key={idx} className="flex items-start gap-1">
-                            <span className="text-emerald-500 mt-0.5">•</span>
-                            {point}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* 展开/收起按钮 */}
-              <button
-                onClick={() => setExpandedCard(isExpanded ? null : item.id)}
-                className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
-              >
-                {isExpanded ? '收起详情' : '查看 AI 完整分析'}
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-          )
-        })()}
-
-        {/* 前沿程度标识 - 基于标题标签 */}
-        {(item.title?.startsWith('🔥') || item.title?.startsWith('⚡') || item.title?.includes('[今日热点]')) && (
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-lg">🔥</span>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400">
-              高战略价值
-            </span>
-          </div>
-        )}
-
-        {/* 原文链接 - 仅在有有效URL时显示 */}
-        {hasValidUrl ? (
-          <a
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`text-xs ${colorClass} opacity-80 hover:opacity-100 flex items-center gap-1 mt-2 hover:underline`}
-            title={item.link}
-          >
-            查看原文 <ExternalLink className="w-3 h-3" />
-          </a>
-        ) : (
-          <span className="text-xs text-gray-600 flex items-center gap-1 mt-2 cursor-not-allowed" title="暂无原文链接">
-            原文链接暂不可用
-          </span>
-        )}
-      </div>
-    )
-  }
-
-  if (error) return <div className="text-white p-6">{error}</div>
+  // 导出报告
+  const handleExport = () => {
+    const reportMd = generateMarkdownReport(filteredTimeline);
+    const blob = new Blob([reportMd], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BYD_Intelligence_Report_${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
-      {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Brain className="w-5 h-5" />
+    <main className="min-h-screen bg-[#020617] text-slate-200 selection:bg-cyan-500/30">
+      {/* 装饰性背景 */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]" />
+        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full" />
+        <div className="absolute top-[20%] -right-[5%] w-[40%] h-[40%] bg-cyan-500/5 blur-[100px] rounded-full" />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-6 py-10">
+        {/* Header Section */}
+        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-16">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-2xl shadow-cyan-500/20 ring-1 ring-cyan-400/30">
+              <Brain className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-wider">Auto-Intel Pro</h1>
-              <p className="text-xs text-cyan-400">AI 驱动 • 实时洞察 • 趋势预判</p>
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                <span className="text-[10px] font-black tracking-[0.4em] text-cyan-500 uppercase">Strategic AI Node</span>
+              </div>
+              <h1 className="text-4xl font-black tracking-tighter text-white">
+                Intelligence <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Command Center</span>
+              </h1>
+              <p className="text-slate-500 text-xs mt-2 font-bold uppercase tracking-widest">
+                Real-time Strategic Feed • 2026 Breakthroughs • AI-Curated
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-500">更新于 {lastUpdate}</span>
-            <button onClick={() => loadData()} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg flex items-center gap-2 text-sm transition-all">
-              <RefreshCw className="w-4 h-4 text-cyan-400" />
-              刷新
+
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+              <input
+                type="text"
+                placeholder="搜索战略情报..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-slate-900/50 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-200 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all w-64"
+              />
+            </div>
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2.5 bg-slate-900/80 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:border-cyan-500/30 transition-all group"
+            >
+              <FileDown className="w-4 h-4 text-cyan-500 group-hover:scale-110 transition-transform" />
+              导出战略周报
+            </button>
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              className="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all active:scale-95 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin text-cyan-500' : ''}`} />
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {loading ? (
-          <div className="py-20 text-center text-cyan-400 animate-pulse">
-            <Activity className="w-8 h-8 mx-auto mb-4 animate-spin" />
-            AI 分析引擎启动中...
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* GTC 2026 专题洞察 - 特别关注比亚迪 */}
-            <div className="bg-gradient-to-br from-indigo-900/40 to-blue-900/10 rounded-2xl p-6 border border-indigo-500/40 shadow-lg shadow-indigo-500/10">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
-                    <MonitorSmartphone className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-100">GTC 2026 专题洞察</h2>
-                    <p className="text-xs text-indigo-400">聚焦 NVIDIA GTC 展会 & 比亚迪智能化战略</p>
-                  </div>
-                  <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded border border-indigo-500/30">深度分析</span>
-                </div>
-                <span className="text-xs text-gray-500">{gtcNews.length} 条情报</span>
+        {/* 1. 上部：AI 全局研判面板 (Daily Synthesis) */}
+        <GlobalSynthesisPanel summary={dailySummary} loading={loading} />
+
+        {/* 2. 中部：今日战略聚焦 (Top Focus) & 态势感知雷达 (Radar Vis) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
+          <div className="lg:col-span-8">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-64 rounded-3xl bg-slate-900/40 border border-slate-800 animate-pulse" />
+                ))}
               </div>
-
-              {/* AI 一句话总结 */}
-              {gtcSummary && (
-                <div className="mb-5 p-3 bg-indigo-500/10 border-l-2 border-indigo-500 rounded-r-lg">
-                  <p className="text-xs text-indigo-200 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3 text-indigo-400" />
-                    <span className="font-semibold text-indigo-400">AI 战略研判：</span>
-                    {gtcSummary}
-                  </p>
-                </div>
-              )}
-
-              {gtcNews.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {gtcNews.map((item) => (
-                    <IntelligenceCard key={item.id} item={item} colorClass="text-indigo-400" />
-                  ))}
-                </div>
-              ) : (
-                <div className="p-10 border border-dashed border-gray-700 rounded-xl text-center">
-                  <p className="text-sm text-gray-500">正在追踪 GTC 2026 预热信息及比亚迪智能化动态...</p>
-                  <p className="text-[10px] text-gray-600 mt-2">关键词：DRIVE Thor, 璇玑架构, AI 算力中心</p>
-                </div>
-              )}
-            </div>
-
-            {/* 今日 AI 战略精要 - 置顶看板 */}
-            {strategicSummary && (
-              <div className="bg-gradient-to-r from-amber-900/30 via-orange-900/20 to-red-900/30 rounded-2xl p-6 border border-amber-500/40 shadow-lg shadow-amber-500/10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-amber-100">今日 AI 战略精要</h2>
-                      <p className="text-xs text-amber-400/80">基于过去24小时高价值情报生成</p>
-                    </div>
-                  </div>
-                  <span className="text-xs bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full border border-amber-500/30">
-                    {new Date(strategicSummary.created_at).toLocaleDateString('zh-CN')}
-                  </span>
-                </div>
-                <div className="bg-black/20 rounded-xl p-4 border border-amber-500/20">
-                  <p className="text-amber-50 text-sm leading-relaxed whitespace-pre-line">
-                    {strategicSummary.content}
-                  </p>
-                </div>
-                <div className="mt-4 flex items-center gap-4 text-xs text-amber-500/60">
-                  <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3" />
-                    AI 实时研判
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Target className="w-3 h-3" />
-                    战略优先级: 高
-                  </span>
-                </div>
-              </div>
+            ) : (
+              <ExecutiveBriefing items={topFocusItems} />
             )}
-
-            {/* 智能驾驶板块 - 优先级最高 */}
-            <div className="bg-gradient-to-br from-gray-800/40 to-cyan-900/10 rounded-2xl p-6 border border-cyan-500/30">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <Car className="w-5 h-5 text-cyan-400" />
-                  <h2 className="text-lg font-bold text-gray-100">智能驾驶 AD/ADAS</h2>
-                  <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded">核心</span>
-                </div>
-                <span className="text-xs text-gray-500">{drivingNews.length} 条情报</span>
-              </div>
-
-              {/* AI 一句话总结 */}
-              {drivingSummary && (
-                <div className="mb-5 p-3 bg-cyan-500/10 border-l-2 border-cyan-500 rounded-r-lg">
-                  <p className="text-xs text-cyan-200 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3 text-cyan-400" />
-                    <span className="font-semibold text-cyan-400">AI 趋势洞察：</span>
-                    {drivingSummary}
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {drivingNews.map((item) => (
-                  <IntelligenceCard key={item.id} item={item} colorClass="text-cyan-400" />
-                ))}
-              </div>
-            </div>
-
-            {/* 智能座舱板块 */}
-            <div className="bg-gradient-to-br from-gray-800/40 to-purple-900/10 rounded-2xl p-6 border border-purple-500/30">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <MonitorSmartphone className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-lg font-bold text-gray-100">智能座舱 Smart Cockpit</h2>
-                  <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">核心</span>
-                </div>
-                <span className="text-xs text-gray-500">{cockpitNews.length} 条情报</span>
-              </div>
-
-              {/* AI 一句话总结 */}
-              {cockpitSummary && (
-                <div className="mb-5 p-3 bg-purple-500/10 border-l-2 border-purple-500 rounded-r-lg">
-                  <p className="text-xs text-purple-200 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3 text-purple-400" />
-                    <span className="font-semibold text-purple-400">AI 体验分析：</span>
-                    {cockpitSummary}
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {cockpitNews.map((item) => (
-                  <IntelligenceCard key={item.id} item={item} colorClass="text-purple-400" />
-                ))}
-              </div>
-            </div>
-
-            {/* 传感器专题 - 放后面 */}
-            <div className="bg-gradient-to-br from-gray-800/40 to-rose-900/10 rounded-2xl p-6 border border-rose-500/30">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <Radar className="w-5 h-5 text-rose-400" />
-                  <h2 className="text-lg font-bold text-gray-100">传感器前沿</h2>
-                  <span className="text-xs bg-rose-500/20 text-rose-400 px-2 py-1 rounded">上游</span>
-                </div>
-                <span className="text-xs text-gray-500">{sensorNews.length} 条情报</span>
-              </div>
-
-              {/* AI 一句话总结 */}
-              {sensorSummary && (
-                <div className="mb-5 p-3 bg-rose-500/10 border-l-2 border-rose-500 rounded-r-lg">
-                  <p className="text-xs text-rose-200 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3 text-rose-400" />
-                    <span className="font-semibold text-rose-400">AI 技术评估：</span>
-                    {sensorSummary}
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sensorNews.map((item) => (
-                  <IntelligenceCard key={item.id} item={item} colorClass="text-rose-400" />
-                ))}
-              </div>
-            </div>
-
-            {/* OTA 追踪 */}
-            <div className="bg-gradient-to-br from-gray-800/40 to-amber-900/10 rounded-2xl p-6 border border-amber-500/30">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <CloudDownload className="w-5 h-5 text-amber-400" />
-                  <h2 className="text-lg font-bold text-gray-100">OTA 升级追踪</h2>
-                  <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-1 rounded">动态</span>
-                </div>
-                <span className="text-xs text-gray-500">{otaNews.length} 条情报</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {otaNews.map((item) => (
-                  <IntelligenceCard key={item.id} item={item} colorClass="text-amber-400" />
-                ))}
-              </div>
-            </div>
-
-            {/* 舆情监控 */}
-            <div className="bg-gradient-to-br from-gray-800/40 to-emerald-900/10 rounded-2xl p-6 border border-emerald-500/30">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <MessageSquareText className="w-5 h-5 text-emerald-400" />
-                  <h2 className="text-lg font-bold text-gray-100">全网舆情雷达</h2>
-                  <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">参考</span>
-                </div>
-                <div className="flex gap-4 text-xs">
-                  <span className="flex items-center gap-1 text-emerald-400"><TrendingUp className="w-3 h-3"/> 正面</span>
-                  <span className="flex items-center gap-1 text-gray-400"><Minus className="w-3 h-3"/> 中性</span>
-                  <span className="flex items-center gap-1 text-rose-400"><TrendingDown className="w-3 h-3"/> 负面</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {sentiments.map((item) => (
-                  <IntelligenceCard key={item.id} item={item} colorClass="text-emerald-400" />
-                ))}
-              </div>
-            </div>
-
           </div>
-        )}
-      </main>
-    </div>
+          <div className="lg:col-span-4">
+            <TrendRadarChart data={intelligence} />
+          </div>
+        </div>
+
+        {/* 3. 下部：动态标签过滤栏 */}
+        <TagFilterBar
+          tags={allTags}
+          selectedTag={selectedTag}
+          onSelectTag={setSelectedTag}
+        />
+
+        {/* 4. 下部：情报时间线 (Timeline) */}
+        <div className="space-y-8">
+          <div className="flex items-center justify-between mb-8 border-b border-slate-800/50 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-800 rounded-lg">
+                <Activity className="w-5 h-5 text-cyan-500" />
+              </div>
+              <h2 className="text-xl font-black text-white tracking-tight uppercase">情报时间线</h2>
+              <span className="text-[10px] font-black text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-800 uppercase tracking-widest">
+                {filteredTimeline.length} 条目
+              </span>
+            </div>
+
+            <div className="flex items-center gap-6">
+               <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                  <span>战略预警</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-700" />
+                  <span>常规监测</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="h-72 rounded-3xl bg-slate-900/20 border border-slate-800 animate-pulse" />
+              ))}
+            </div>
+          ) : filteredTimeline.length === 0 ? (
+            <div className="py-32 text-center rounded-[3rem] border border-dashed border-slate-800 bg-slate-900/10">
+              <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Radar className="w-10 h-10 text-slate-600 animate-pulse" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-400 tracking-tight">扫描范围未发现匹配情报</h3>
+              <p className="text-slate-600 text-xs mt-2 uppercase tracking-widest font-black">请尝试调整筛选条件或搜索关键词</p>
+              <button
+                onClick={() => { setSelectedTag(null); setSearchQuery(''); }}
+                className="mt-8 text-cyan-500 text-[10px] font-black uppercase tracking-[0.2em] hover:text-cyan-400 border border-cyan-500/20 px-6 py-2.5 rounded-full hover:bg-cyan-500/5 transition-all"
+              >
+                重置系统检索
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredTimeline.map((item) => (
+                <IntelligenceCard key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <footer className="mt-32 pt-12 border-t border-slate-900/50">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3 grayscale opacity-30">
+              <Brain className="w-6 h-6 text-cyan-500" />
+              <div className="h-4 w-px bg-slate-700" />
+              <span className="text-[10px] font-black tracking-[0.5em] uppercase text-slate-400">Autonomous Intelligence Hub</span>
+            </div>
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em]">
+              Data Sync: {lastUpdate} • BYD Strategic Planning Unit
+            </p>
+          </div>
+        </footer>
+      </div>
+    </main>
   )
 }
