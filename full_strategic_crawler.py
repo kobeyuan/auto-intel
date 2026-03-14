@@ -204,24 +204,26 @@ class IntelligenceCrawler:
             return {"score": 10, "reason": "KIMI_API_KEY 未配置，默认通过"}
 
         prompt = f"""
-        作为资深的汽车行业战略总监，请对以下资讯进行情报价值评估。
+        作为资深的汽车行业战略总监，请对以下资讯进行【严苛】的情报价值评估。
 
         【资讯标题】: {title}
         【内容摘要】: {snippet}
 
-        评分规则 (1-10分):
-        1. 直接打 0 分 (必须过滤):
-           - 消费者导向的降价/促销信息。
-           - 普通媒体车评、试驾体验。
-           - 行业八卦、非战略性新闻。
-        2. 打 8 分以上 (战略价值高):
-           - L3/L4 自动驾驶路测牌照、法规进展。
-           - 电子电气架构 (EE架构) 演进、芯片首发。
-           - 大模型 (VLM/World Model) 上车、AI 算法突破。
-           - 核心高管变动、合资/战略收购。
-        3. 其他行业动态按其对比亚迪战略研判的参考价值打分。
+        打分规则 (0-10分):
+        1. 0-6分 (垃圾噪音，坚决丢弃):
+           - 普通车型上市、降价促销、经销商活动。
+           - 单一零部件常规发布（如普通激光雷达更新、内饰件）。
+           - 基础财报数据罗列、普通媒体试驾/车评。
+           - 行业八卦、非实质性的人事变动、基础市场占有率波动。
+        2. 7-8分 (核心战略情报，允许入库):
+           - 关键技术实质性突破（如固态电池 SOP 节点、舱驾一体算力架构革新）。
+           - 重点准入法规落地、全球化战略重大受阻或突破。
+           - 头部竞品（特斯拉、华为、蔚小理）重大组织架构调整。
+        3. 9-10分 (顶级行业核弹，战略聚焦):
+           - 行业范式转移（如特斯拉 FSD 端到端大规模推送、GTC 发布 2000T+ 算力芯片）。
+           - 足以彻底改变竞争格局的并购、跨界巨头（如苹果、英伟达）的底层战略入局。
 
-        请严格以 JSON 格式输出，不要包含 Markdown 标签:
+        请严格以 JSON 格式输出:
         {{
             "score": 评分数字,
             "reason": "简短的打分理由"
@@ -236,7 +238,7 @@ class IntelligenceCrawler:
                     json={
                         "model": KIMI_MODEL,
                         "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 0.1
+                        "temperature": 1.0
                     },
                     timeout=30
                 )
@@ -276,38 +278,27 @@ class IntelligenceCrawler:
         return {"score": 5, "reason": "分析异常，默认中等分数"}
 
     def ai_analyze(self, title: str, snippet: str, category: str) -> Dict[str, Any]:
-        """AI 深度分析：针对不同类别使用不同视角，中文输出"""
+        """AI 深度分析：强制输出战略冲击，杜绝废话"""
         if not GEMINI_API_KEY:
             return None
 
-        # 动态 Prompt 逻辑
-        role_context = "比亚迪【智能化产品规划部 & 战略部】高级分析师"
-        if category == "gtc-insight":
-            focus = "NVIDIA GTC 2026 行业资讯、Blackwell/DRIVE Thor 架构及对比亚迪的战略意义"
-        elif category == "autonomous-driving":
-            focus = "自动驾驶（FSD/ADS/NOA）最新进展、端到端技术落地、算法架构演进"
-        elif category == "smart-cockpit":
-            focus = "智能座舱、车载大模型、人机交互、座舱芯片（8295/澎湃等）趋势"
-        else:
-            focus = "智能汽车行业前沿动态、供应链革新及市场竞争态势"
-
         prompt = f"""
-        作为{role_context}，请对以下行业资讯进行深度研判。
+        作为比亚迪【智能化产品规划部 & 战略部】高级研判专家，请对以下行业资讯进行深度研判。
 
-        【类别】: {category} (重点关注: {focus})
+        【研判规则：拒绝对事实的二次复述】
+        不要写“英伟达发布了芯片”这种废话。必须回答 So What。
+        输出格式：核心本质 + 对新能源车企（特别是对比亚迪）的战略冲击。
+
+        【类别】: {category}
         【资讯标题】: {title}
         【内容摘要】: {snippet}
 
-        请输出以下维度的深度洞察（必须使用中文输出）：
-        1. 【这是什么？】: 简要说明技术/事件的核心本质。
-        2. 【对比亚迪的影响/启示】: 从战略规划角度，分析对我们智能化产品（璇玑架构、天神之眼等）的具体影响。
-        3. 【对策/关注点】: 建议后续如何跟进或应对。
-
-        请严格以 JSON 格式输出，不要包含 Markdown 标签:
+        请严格以 JSON 格式输出，内容控制在 100 字内：
         {{
-            "what": "研判内容...",
-            "impact": "影响分析...",
-            "focus": ["要点1", "要点2"]
+            "what": "一句话说明技术/事件的核心本质（拒绝对标题的复述）",
+            "impact": "【战略冲击】核心事实及对我司的具体冲击/启示（必须包含具体对策方向）",
+            "focus": ["关键行动点1", "关键行动点2"],
+            "sentiment": "positive/neutral/negative"
         }}
         """
 
@@ -435,15 +426,15 @@ class IntelligenceCrawler:
                     "category": task['category'],
                     "source": "GTC/Strategic",
                     "quality_score": score,
-                    "sentiment": analysis.get('sentiment', 'neutral') if isinstance(analysis, dict) else 'neutral',
-                    "importance": "high" if score >= 8.5 else "medium",
-                    "created_at": datetime.now().isoformat(),
                     "verified": True if analysis else False,
-                    "metadata": {
-                        "tags": tags[:5],
-                        "ai_raw": analysis if isinstance(analysis, dict) else None
-                    }
+                    "keywords": tags[:5],
+                    "created_at": datetime.now().isoformat(),
+                    "published_at": datetime.now().isoformat()
                 }
+                # 额外映射 (适配现有表结构)
+                if "credibility_tier" in res: # 这里的 res 是搜索结果，不是 DB 字段
+                    pass
+
                 all_items.append(item)
                 time.sleep(1.5)
 

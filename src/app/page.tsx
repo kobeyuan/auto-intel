@@ -54,12 +54,12 @@ export default function Home() {
         source_url: item.link,
         category: item.category,
         sentiment: item.sentiment || 'neutral',
-        importance: item.importance || (item.quality_score >= 8.5 ? 'high' : 'medium'),
+        importance: (item.quality_score >= 8.5 || item.importance === 'high') ? 'high' : 'medium',
         quality_score: item.quality_score,
         verified: item.verified,
-        metadata: item.metadata,
+        metadata: item.metadata || { tags: item.keywords || [] },
         created_at: item.created_at,
-        published_at: item.created_at
+        published_at: item.published_at || item.created_at
       }))
 
       setIntelligence(formatted)
