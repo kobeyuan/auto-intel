@@ -102,13 +102,13 @@ export default function Home() {
           const titleMatch = item.title?.toLowerCase().includes(sub.id.toLowerCase());
           const keywordMatch = item.keywords?.some(k => sub.keywords.some(sk => k.toLowerCase().includes(sk.toLowerCase())));
           return titleMatch || keywordMatch;
-        })
+        }).slice(0, 8) // 强制信息节流
       })
       const classifiedIds = new Set(Object.values(groups).flat().map(i => i.id))
-      groups['others'] = intelligence.filter(item => !classifiedIds.has(item.id))
+      groups['others'] = intelligence.filter(item => !classifiedIds.has(item.id)).slice(0, 8)
     } else {
       const activeCategory = mainTabs.find(t => t.id === activeTab)?.category
-      groups[activeTab] = intelligence.filter(item => item.category === activeCategory)
+      groups[activeTab] = intelligence.filter(item => item.category === activeCategory).slice(0, 8) // 强制信息节流
     }
 
     return groups

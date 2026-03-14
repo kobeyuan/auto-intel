@@ -617,8 +617,8 @@ def fetch_with_depth(query_info: Dict[str, str]) -> List[Dict[str, Any]]:
     # 深度搜索参数
     params = {
         "q": query,
-        "count": 15,              # 增加获取条数
-        "freshness": "pw",        # 从 past day (pd) 改为 past week (pw) 以覆盖更多高质量深度分析
+        "count": 10,              # 精简获取条数
+        "freshness": "pd",        # 强制时效性：过去24小时 (pd) 或 过去一周 (pw)
         "search_lang": "zh-hans", # 中文优先
         "text_decorations": "false",
         "safesearch": "off"

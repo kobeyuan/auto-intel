@@ -285,18 +285,18 @@ class IntelligenceCrawler:
         prompt = f"""
         作为比亚迪【智能化产品规划部 & 战略部】高级研判专家，请对以下行业资讯进行深度研判。
 
-        【研判规则：拒绝对事实的二次复述】
-        不要写“英伟达发布了芯片”这种废话。必须回答 So What。
-        输出格式：核心本质 + 对新能源车企（特别是对比亚迪）的战略冲击。
+        【研判规则】
+        1. 拒绝对事实的二次复述。不要写“某公司发布了某产品”这种废话。
+        2. 采用结构化短句，信息密度极高。
+        3. 必须回答 So What，直接给出战略穿透结论。
 
-        【类别】: {category}
         【资讯标题】: {title}
         【内容摘要】: {snippet}
 
-        请严格以 JSON 格式输出，内容控制在 100 字内：
+        请严格以 JSON 格式输出，总字数控制在 60-80 字：
         {{
-            "what": "一句话说明技术/事件的核心本质（拒绝对标题的复述）",
-            "impact": "【战略冲击】核心事实及对我司的具体冲击/启示（必须包含具体对策方向）",
+            "what": "【核心动作】一句话说清谁、发布了什么核心功能/技术。",
+            "impact": "【战略穿透】一针见血指出其对竞争格局的影响（如降本效果、算力代差、体验壁垒）。",
             "focus": ["关键行动点1", "关键行动点2"],
             "sentiment": "positive/neutral/negative"
         }}
@@ -366,13 +366,20 @@ class IntelligenceCrawler:
             {"query": "GTC 2026 AI Agents NIMs 企业级应用", "category": "gtc-insight"},
 
             # 自动驾驶 (端到端与大模型)
-            {"query": "Tesla FSD v14 2026 最新评价 体验", "category": "autonomous-driving"},
-            {"query": "华为 乾崑 ADS 3.5 4.0 路线图 2026", "category": "autonomous-driving"},
-            {"query": "2026 端到端 自动驾驶 算法 架构 突破", "category": "autonomous-driving"},
-            {"query": "小米 SU7 Ultra 智驾系统 2026 进展", "category": "autonomous-driving"},
+            {"query": "Tesla FSD v12 v13 v14 rollout 2026", "category": "autonomous-driving"},
+            {"query": "华为 乾崑 ADS 4.0 5.0 路线图", "category": "autonomous-driving"},
+            {"query": "端到端 自动驾驶 算法 突破 2026", "category": "autonomous-driving"},
+
+            # 定向 OTA 专项搜索 (精准狙击头部新势力)
+            {"query": "Tesla FSD V12 V13 推送 更新", "category": "ota"},
+            {"query": "理想汽车 OTA 智能座舱 5.0 6.0", "category": "ota"},
+            {"query": "小鹏汽车 天玑系统 XOS 升级", "category": "ota"},
+            {"query": "蔚来汽车 Banyan 智驾 系统更新", "category": "ota"},
+            {"query": "吉利 极氪 极越 OTA 智能化升级", "category": "ota"},
+            {"query": "小米汽车 SU7 OTA 升级 计划", "category": "ota"},
 
             # 智能座舱
-            {"query": "骁龙 8775P 舱驾一体 2026 首发车型", "category": "smart-cockpit"},
+            {"query": "骁龙 8775P 8295 舱驾一体 首发车型", "category": "smart-cockpit"},
             {"query": "车载 端侧 大模型 2026 落地 厂商", "category": "smart-cockpit"},
             {"query": "鸿蒙座舱 5.0 原生鸿蒙 汽车 生态 2026", "category": "smart-cockpit"},
 

@@ -39,16 +39,16 @@ export function IntelligenceCard({ item }: IntelligenceCardProps) {
         </div>
 
         <div className="flex-grow min-w-0">
-          <p className="text-sm font-semibold text-slate-700 truncate group-hover:text-blue-600 transition-colors">
+          <p className="text-base font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors">
             {item.content}
           </p>
         </div>
 
         <div className="flex-shrink-0 flex items-center gap-4">
-          <span className={`text-[10px] font-bold ${freshness.color.replace('text-', 'text-opacity-80 text-')} hidden md:block`}>
+          <span className={`text-xs font-black ${freshness.color.replace('text-', 'text-')} hidden md:block`}>
             {freshness.text.replace(/🔥 |⚡ |📌 |⏳ /, '')}
           </span>
-          {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-300" /> : <ChevronRight className="w-4 h-4 text-slate-300" />}
+          {isExpanded ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
         </div>
       </div>
 
