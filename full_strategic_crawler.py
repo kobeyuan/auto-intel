@@ -199,9 +199,9 @@ class IntelligenceCrawler:
             return []
 
     def ai_filter(self, title: str, snippet: str) -> Dict[str, Any]:
-        """使用 Kimi AI 作为行业战略总监进行情报过滤打分"""
-        if not KIMI_API_KEY:
-            return {"score": 10, "reason": "KIMI_API_KEY 未配置，默认通过"}
+        """使用 Gemini AI 作为行业战略总监进行情报过滤打分"""
+        if not GEMINI_API_KEY:
+            return {"score": 10, "reason": "GEMINI_API_KEY 未配置，默认通过"}
 
         prompt = f"""
         作为资深的汽车行业战略总监，请对以下资讯进行【严苛】的情报价值评估。
@@ -221,7 +221,7 @@ class IntelligenceCrawler:
            - 头部竞品（特斯拉、华为、蔚小理）重大组织架构调整。
         3. 9-10分 (顶级行业核弹，战略聚焦):
            - 行业范式转移（如特斯拉 FSD 端到端大规模推送、GTC 发布 2000T+ 算力芯片）。
-           - 足以彻底改变竞争格局的并购、跨界巨头（如苹果、英伟达）的底层战略入局。
+           - 足以彻底改变竞争格局的并购、跨界巨巨头（如苹果、英伟达）的底层战略入局。
 
         请严格以 JSON 格式输出:
         {{
@@ -233,12 +233,12 @@ class IntelligenceCrawler:
         try:
             for attempt in range(2):
                 resp = requests.post(
-                    f"{KIMI_API_URL}/chat/completions",
-                    headers={"Authorization": f"Bearer {KIMI_API_KEY}", "Content-Type": "application/json"},
+                    f"{GEMINI_API_URL}/chat/completions",
+                    headers={"Authorization": f"Bearer {GEMINI_API_KEY}", "Content-Type": "application/json"},
                     json={
-                        "model": KIMI_MODEL,
+                        "model": GEMINI_MODEL,
                         "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 1.0
+                        "temperature": 0.5
                     },
                     timeout=30
                 )
@@ -271,7 +271,7 @@ class IntelligenceCrawler:
                                 "reason": reason_match.group(1) if reason_match else "解析失败，仅提取到分数"
                             }
                 else:
-                    print(f"   ⚠️ Kimi 响应错误 ({resp.status_code}): {resp.text}")
+                    print(f"   ⚠️ Gemini 响应错误 ({resp.status_code}): {resp.text}")
                 time.sleep(2)
         except Exception as e:
             print(f"   ⚠️ AI 过滤失败: {e}")

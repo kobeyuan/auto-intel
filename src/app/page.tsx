@@ -3,37 +3,44 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   LayoutDashboard,
-  Cpu,
-  ShieldAlert,
-  Zap,
-  Activity,
+  Target,
+  Compass,
+  Scale,
+  MessageSquare,
   RefreshCw,
   Brain,
-  Car,
+  Activity,
   Radar,
-  Search,
-  FileDown,
-  ChevronDown
+  ChevronDown,
+  ChevronUp,
+  TrendingUp,
+  Cpu,
+  Car,
+  Zap,
+  Radio
 } from 'lucide-react'
 import { IntelligenceCard } from '@/components/IntelligenceCard'
-import { ExecutiveBriefing } from '@/components/ExecutiveBriefing'
-import { TagFilterBar } from '@/components/TagFilterBar'
 import { GlobalSynthesisPanel } from '@/components/GlobalSynthesisPanel'
-import { TrendRadarChart } from '@/components/TrendRadarChart'
 import { IndustryNews } from '@/types'
 import { supabase } from '@/lib/supabase'
-import { generateDailySynthesis, generateMarkdownReport } from '@/utils/intelligence'
+import { generateDailySynthesis } from '@/utils/intelligence'
+
+// 定义子板块配置
+const SUB_SECTIONS = [
+  { id: 'gtc', label: 'GTC 2026', icon: Cpu, keywords: ['GTC', 'NVIDIA', '英伟达', 'Blackwell'] },
+  { id: 'adas', label: '智能驾驶', icon: Car, keywords: ['智驾', 'FSD', '自动驾驶', 'ADS', '端到端'] },
+  { id: 'cockpit', label: '智能座舱', icon: Zap, keywords: ['座舱', '鸿蒙', '大模型', '语音', '屏幕'] },
+  { id: 'sensor', label: '传感器', icon: Radio, keywords: ['激光雷达', '雷达', '摄像头', '感知'] },
+  { id: 'ota', label: 'OTA 升级', icon: RefreshCw, keywords: ['OTA', '升级', '更新', '软件'] },
+]
 
 export default function Home() {
   const [intelligence, setIntelligence] = useState<IndustryNews[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<string>('')
   const [dailySummary, setDailySummary] = useState('')
-
-  // 过滤状态
-  const [selectedTag, setSelectedTag] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showExportModal, setShowExportModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<'all' | 'competitor' | 'tech' | 'policy' | 'voc'>('all')
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
 
   const fetchData = async () => {
     try {
@@ -41,8 +48,8 @@ export default function Home() {
       const { data, error } = await supabase
         .from('industry_intelligence')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100)
+        .order('quality_score', { ascending: false })
+        .limit(300)
 
       if (error) throw error
 
@@ -54,20 +61,18 @@ export default function Home() {
         source_url: item.link,
         category: item.category,
         sentiment: item.sentiment || 'neutral',
-        importance: (item.quality_score >= 8.5 || item.importance === 'high') ? 'high' : 'medium',
+        importance: (item.quality_score >= 8.5) ? 'high' : 'medium',
         quality_score: item.quality_score,
         verified: item.verified,
         metadata: item.metadata || { tags: item.keywords || [] },
         created_at: item.created_at,
-        published_at: item.published_at || item.created_at
+        published_at: item.published_at || item.created_at,
+        keywords: item.keywords
       }))
 
       setIntelligence(formatted)
-
-      // 生成每日综述
       const summary = await generateDailySynthesis(formatted)
       setDailySummary(summary)
-
       setLastUpdate(new Date().toLocaleTimeString('zh-CN'))
     } catch (err) {
       console.error('获取情报失败:', err)
@@ -80,212 +85,198 @@ export default function Home() {
     fetchData()
   }, [])
 
-  // 1. 提取去重标签
-  const allTags = useMemo(() => {
-    const tagsSet = new Set<string>()
-    intelligence.forEach(item => {
-      if (item.metadata?.tags && Array.isArray(item.metadata.tags)) {
-        item.metadata.tags.forEach(t => tagsSet.add(t))
-      }
-      if (item.keywords && Array.isArray(item.keywords)) {
-        item.keywords.forEach(t => tagsSet.add(t))
-      }
-    })
-    return Array.from(tagsSet).filter(t => t.length > 1 && t !== '2026_TREND')
-  }, [intelligence])
+  const mainTabs = [
+    { id: 'all', label: '全量情报', icon: LayoutDashboard, color: 'text-slate-400' },
+    { id: 'competitor', label: '竞品 X 光机', icon: Target, color: 'text-red-500', category: 'gtc-insight' },
+    { id: 'tech', label: '技术罗盘', icon: Compass, color: 'text-cyan-500', category: 'autonomous-driving' },
+    { id: 'policy', label: '政策红线', icon: Scale, color: 'text-amber-500', category: 'sensors' },
+    { id: 'voc', label: '用户声音', icon: MessageSquare, color: 'text-purple-500', category: 'ota' },
+  ]
 
-  // 2. 筛选 Top 3 高价值情报 (用于 ExecutiveBriefing)
-  const topFocusItems = useMemo(() => {
-    return [...intelligence]
-      .filter(item => item.importance === 'high' || (item.quality_score && item.quality_score >= 8.5))
-      .sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0))
-      .slice(0, 3)
-  }, [intelligence])
+  const groupedData = useMemo(() => {
+    const groups: Record<string, IndustryNews[]> = {}
 
-  // 3. 筛选情报流 (用于 Timeline)
-  const filteredTimeline = useMemo(() => {
-    return intelligence.filter(item => {
-      const matchesTag = !selectedTag ||
-        (item.metadata?.tags?.includes(selectedTag)) ||
-        (item.keywords?.includes(selectedTag)) ||
-        (item.title.includes(selectedTag))
+    if (activeTab === 'all') {
+      SUB_SECTIONS.forEach(sub => {
+        groups[sub.id] = intelligence.filter(item => {
+          const titleMatch = item.title?.toLowerCase().includes(sub.id.toLowerCase());
+          const keywordMatch = item.keywords?.some(k => sub.keywords.some(sk => k.toLowerCase().includes(sk.toLowerCase())));
+          return titleMatch || keywordMatch;
+        })
+      })
+      const classifiedIds = new Set(Object.values(groups).flat().map(i => i.id))
+      groups['others'] = intelligence.filter(item => !classifiedIds.has(item.id))
+    } else {
+      const activeCategory = mainTabs.find(t => t.id === activeTab)?.category
+      groups[activeTab] = intelligence.filter(item => item.category === activeCategory)
+    }
 
-      const matchesSearch = !searchQuery ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.content.toLowerCase().includes(searchQuery.toLowerCase())
+    return groups
+  }, [intelligence, activeTab])
 
-      return matchesTag && matchesSearch
-    })
-  }, [intelligence, selectedTag, searchQuery])
-
-  // 导出报告
-  const handleExport = () => {
-    const reportMd = generateMarkdownReport(filteredTimeline);
-    const blob = new Blob([reportMd], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `BYD_Intelligence_Report_${new Date().toISOString().split('T')[0]}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  const toggleSection = (id: string) => {
+    setExpandedSections(prev => ({ ...prev, [id]: prev[id] === undefined ? false : !prev[id] }))
+  }
 
   return (
-    <main className="min-h-screen bg-[#020617] text-slate-200 selection:bg-cyan-500/30">
-      {/* 装饰性背景 */}
+    <main className="min-h-screen bg-[#f8fafc] text-slate-900 selection:bg-blue-500/30 font-sans">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]" />
-        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full" />
-        <div className="absolute top-[20%] -right-[5%] w-[40%] h-[40%] bg-cyan-500/5 blur-[100px] rounded-full" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full" />
+        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-indigo-400/10 blur-[100px] rounded-full" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-6 py-10">
-        {/* Header Section */}
-        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-16">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-2xl shadow-cyan-500/20 ring-1 ring-cyan-400/30">
-              <Brain className="w-8 h-8 text-white" />
+      <div className="relative max-w-6xl mx-auto px-6 py-12">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+          <div className="flex items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-xl shadow-blue-500/20">
+              <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
-                <span className="text-[10px] font-black tracking-[0.4em] text-cyan-500 uppercase">Strategic AI Node</span>
-              </div>
-              <h1 className="text-4xl font-black tracking-tighter text-white">
-                Intelligence <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Command Center</span>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                Intelligence <span className="text-blue-600">Command Center</span>
               </h1>
-              <p className="text-slate-500 text-xs mt-2 font-bold uppercase tracking-widest">
-                Real-time Strategic Feed • 2026 Breakthroughs • AI-Curated
+              <p className="text-slate-400 text-[10px] mt-0.5 font-bold uppercase tracking-[0.2em]">
+                Strategic Planning Unit • v2.2
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-3">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-              <input
-                type="text"
-                placeholder="搜索战略情报..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-slate-900/50 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-200 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all w-64"
-              />
+            <div className="px-4 py-2 bg-white/80 backdrop-blur-md border border-slate-200 rounded-full shadow-sm">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                System Online
+              </span>
             </div>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-900/80 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:border-cyan-500/30 transition-all group"
-            >
-              <FileDown className="w-4 h-4 text-cyan-500 group-hover:scale-110 transition-transform" />
-              导出战略周报
-            </button>
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all active:scale-95 disabled:opacity-50"
-            >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin text-cyan-500' : ''}`} />
+            <button onClick={fetchData} disabled={loading} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-all active:scale-95">
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin text-blue-500' : ''}`} />
             </button>
           </div>
         </header>
 
-        {/* 1. 上部：AI 全局研判面板 (Daily Synthesis) */}
         <GlobalSynthesisPanel summary={dailySummary} loading={loading} />
 
-        {/* 2. 中部：今日战略聚焦 (Top Focus) & 态势感知雷达 (Radar Vis) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
-          <div className="lg:col-span-8">
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-64 rounded-3xl bg-slate-900/40 border border-slate-800 animate-pulse" />
-                ))}
-              </div>
-            ) : (
-              <ExecutiveBriefing items={topFocusItems} />
-            )}
-          </div>
-          <div className="lg:col-span-4">
-            <TrendRadarChart data={intelligence} />
-          </div>
-        </div>
+        <nav className="flex flex-wrap gap-2 mb-12 p-1.5 bg-slate-100/50 backdrop-blur-sm border border-slate-200/60 rounded-2xl w-fit">
+          {mainTabs.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setActiveTab(s.id as any)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${
+                activeTab === s.id
+                ? 'bg-white text-blue-600 shadow-md shadow-blue-500/5 border border-blue-100'
+                : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <s.icon className={`w-4 h-4 ${activeTab === s.id ? 'text-blue-600' : 'text-slate-400'}`} />
+              {s.label}
+            </button>
+          ))}
+        </nav>
 
-        {/* 3. 下部：动态标签过滤栏 */}
-        <TagFilterBar
-          tags={allTags}
-          selectedTag={selectedTag}
-          onSelectTag={setSelectedTag}
-        />
-
-        {/* 4. 下部：情报时间线 (Timeline) */}
-        <div className="space-y-8">
-          <div className="flex items-center justify-between mb-8 border-b border-slate-800/50 pb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-slate-800 rounded-lg">
-                <Activity className="w-5 h-5 text-cyan-500" />
-              </div>
-              <h2 className="text-xl font-black text-white tracking-tight uppercase">情报时间线</h2>
-              <span className="text-[10px] font-black text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-800 uppercase tracking-widest">
-                {filteredTimeline.length} 条目
-              </span>
-            </div>
-
-            <div className="flex items-center gap-6">
-               <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                  <span>战略预警</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-700" />
-                  <span>常规监测</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div className="space-y-10">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="h-72 rounded-3xl bg-slate-900/20 border border-slate-800 animate-pulse" />
-              ))}
+            <div className="flex flex-col items-center justify-center py-24 space-y-4">
+              <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                Initializing Strategic Nodes...
+              </p>
             </div>
-          ) : filteredTimeline.length === 0 ? (
-            <div className="py-32 text-center rounded-[3rem] border border-dashed border-slate-800 bg-slate-900/10">
-              <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Radar className="w-10 h-10 text-slate-600 animate-pulse" />
+          ) : Object.entries(groupedData).length === 0 || Object.values(groupedData).every(items => items.length === 0) ? (
+            <div className="bg-white/40 backdrop-blur-md border border-slate-200 rounded-[2rem] p-20 text-center">
+              <div className="inline-flex p-4 bg-slate-50 rounded-2xl mb-6">
+                <Radar className="w-8 h-8 text-slate-300" />
               </div>
-              <h3 className="text-lg font-bold text-slate-400 tracking-tight">扫描范围未发现匹配情报</h3>
-              <p className="text-slate-600 text-xs mt-2 uppercase tracking-widest font-black">请尝试调整筛选条件或搜索关键词</p>
-              <button
-                onClick={() => { setSelectedTag(null); setSearchQuery(''); }}
-                className="mt-8 text-cyan-500 text-[10px] font-black uppercase tracking-[0.2em] hover:text-cyan-400 border border-cyan-500/20 px-6 py-2.5 rounded-full hover:bg-cyan-500/5 transition-all"
-              >
-                重置系统检索
-              </button>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">No Active Intelligence</h3>
+              <p className="text-xs text-slate-400 mt-2 font-medium">当前雷达范围内未发现符合战略评分的情报节点。</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredTimeline.map((item) => (
-                <IntelligenceCard key={item.id} item={item} />
-              ))}
-            </div>
+            Object.entries(groupedData).map(([groupId, items]) => {
+              if (items.length === 0) return null;
+              const subInfo = SUB_SECTIONS.find(s => s.id === groupId) || mainTabs.find(t => t.id === groupId);
+              const isExpanded = expandedSections[groupId] !== false;
+              const topItems = items.slice(0, 5);
+              const otherItems = items.slice(5);
+
+              return (
+                <section key={groupId} className="bg-white/60 backdrop-blur-md border border-slate-200/80 rounded-[2rem] shadow-sm overflow-hidden transition-all hover:shadow-md">
+                  <div
+                    className="flex items-center justify-between px-8 py-6 cursor-pointer hover:bg-slate-50/50 transition-all"
+                    onClick={() => toggleSection(groupId)}
+                  >
+                    <div className="flex items-center gap-5">
+                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                        {subInfo?.icon ? <subInfo.icon className="w-5 h-5 text-blue-600" /> : <Activity className="w-5 h-5 text-blue-600" />}
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase">{subInfo?.label || '其他情报'}</h2>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{items.length} Nodes</span>
+                          <div className="h-1 w-1 rounded-full bg-slate-200" />
+                          <span className="text-[10px] font-bold text-blue-500/80 uppercase tracking-widest">
+                            Peak Score: {(items[0]?.quality_score || 0).toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full">
+                        <TrendingUp className="w-3 h-3 text-blue-500" />
+                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-tighter">AI 趋势研判</span>
+                      </div>
+                      {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-300" /> : <ChevronDown className="w-5 h-5 text-slate-300" />}
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="px-2 pb-6">
+                      <div className="mx-6 mb-6 p-5 bg-blue-50/40 border border-blue-100/50 rounded-2xl">
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 bg-white rounded-lg shadow-sm">
+                            <Brain className="w-4 h-4 text-blue-500" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-slate-600 leading-relaxed">
+                              <span className="text-blue-600 font-black uppercase mr-2">Strategic Insight:</span>
+                              该板块核心热度集中在 {items[0]?.title.slice(0, 25)}...
+                              {groupId === 'gtc' ? ' 英伟达正通过 Blackwell 架构建立绝对的算力护城河，建议关注其对端侧推理的成本摊薄效应。' : ' 行业正处于从功能堆叠向体验闭环转型的关键期，SOP 节点普遍提前。'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="divide-y divide-slate-100">
+                        {topItems.map(item => (
+                          <IntelligenceCard key={item.id} item={item} />
+                        ))}
+
+                        {otherItems.length > 0 && (
+                          <div className="bg-slate-50/30">
+                             <div className="px-8 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                               次要监测情报 ({otherItems.length})
+                             </div>
+                             {otherItems.map(item => (
+                               <IntelligenceCard key={item.id} item={item} />
+                             ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )
+            })
           )}
         </div>
 
-        {/* Footer */}
-        <footer className="mt-32 pt-12 border-t border-slate-900/50">
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-3 grayscale opacity-30">
-              <Brain className="w-6 h-6 text-cyan-500" />
-              <div className="h-4 w-px bg-slate-700" />
-              <span className="text-[10px] font-black tracking-[0.5em] uppercase text-slate-400">Autonomous Intelligence Hub</span>
-            </div>
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em]">
-              Data Sync: {lastUpdate} • BYD Strategic Planning Unit
-            </p>
+        <footer className="mt-24 pb-12 text-center">
+          <div className="flex items-center justify-center gap-3 mb-4 opacity-20">
+            <div className="h-px w-12 bg-slate-400" />
+            <Brain className="w-4 h-4 text-slate-900" />
+            <div className="h-px w-12 bg-slate-400" />
           </div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
+            Data Sync: {lastUpdate} • Autonomous Strategic Node
+          </p>
         </footer>
       </div>
     </main>

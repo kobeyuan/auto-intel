@@ -43,7 +43,7 @@ export function parseAIAnalysis(snippet: string): DecodedAnalysis | null {
 /**
  * 获取基于创建时间的鲜度勋章配置
  */
-export function getFreshnessBadge(dateString: string) {
+export function getFreshnessBadge(dateString: string | Date) {
   const date = new Date(dateString);
   const now = new Date();
   const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
@@ -63,7 +63,7 @@ export function getFreshnessBadge(dateString: string) {
 /**
  * 格式化相对时间显示
  */
-export function formatRelativeTime(dateString: string): string {
+export function formatRelativeTime(dateString: string | Date): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
