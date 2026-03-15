@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Activity, ShieldCheck, Terminal, Brain } from 'lucide-react';
+import { ShieldCheck, Terminal, Brain } from 'lucide-react';
 
 interface GlobalSynthesisPanelProps {
   summary: string;
@@ -11,9 +11,14 @@ interface GlobalSynthesisPanelProps {
 export function GlobalSynthesisPanel({ summary, loading }: GlobalSynthesisPanelProps) {
   const [displayText, setDisplayText] = useState('');
   const [index, setIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (loading || !summary) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || loading || !summary) {
       setDisplayText('');
       setIndex(0);
       return;
@@ -23,20 +28,20 @@ export function GlobalSynthesisPanel({ summary, loading }: GlobalSynthesisPanelP
       const timer = setTimeout(() => {
         setDisplayText((prev) => prev + summary[index]);
         setIndex((prev) => prev + 1);
-      }, 30);
+      }, 20);
       return () => clearTimeout(timer);
     }
-  }, [index, summary, loading]);
+  }, [index, summary, loading, mounted]);
+
+  // Hydration guard
+  if (!mounted) return null;
 
   return (
     <section className="relative mb-20 group">
-      {/* 顶级终端风格：浅色高对比度专业版 */}
       <div className="relative p-12 rounded-[2rem] bg-white border border-slate-200 shadow-xl overflow-hidden glow-card">
-        {/* 背景装饰：扫描线效果 - 弱化处理 */}
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(59,130,246,0.02)_50%,transparent_100%)] bg-[length:100%_4px] animate-scan pointer-events-none opacity-50" />
 
         <div className="relative flex flex-col xl:flex-row gap-16 items-stretch">
-          {/* 左侧：核心推演结论 */}
           <div className="flex-1 space-y-10">
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-center shadow-sm">
@@ -82,7 +87,6 @@ export function GlobalSynthesisPanel({ summary, loading }: GlobalSynthesisPanelP
             </div>
           </div>
 
-          {/* 右侧：高对比度决策指标 (AlphaSense 风格) */}
           <div className="shrink-0 w-full xl:w-80 flex flex-col gap-6">
             <div className="flex-1 p-8 bg-slate-50 border-l-4 border-emerald-500 rounded-r-2xl flex flex-col justify-center shadow-sm">
               <div className="text-xs font-black text-slate-500 uppercase mb-4 tracking-[0.2em] flex items-center justify-between">

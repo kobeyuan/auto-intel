@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { IndustryNews } from '@/types'
 import { ChevronRight, ChevronDown, ExternalLink, ShieldAlert, Zap, TrendingUp, AlertTriangle } from 'lucide-react'
 import { getFreshnessBadge } from '@/utils/intelligence'
@@ -11,6 +11,12 @@ interface IntelligenceCardProps {
 
 export function IntelligenceCard({ item }: IntelligenceCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const freshness = getFreshnessBadge(item.published_at || item.created_at)
   const tags = Array.isArray(item.keywords) ? item.keywords : []
 
@@ -19,6 +25,25 @@ export function IntelligenceCard({ item }: IntelligenceCardProps) {
     if (score >= 8) return 'text-orange-600 border-orange-200 bg-orange-50'
     return 'text-blue-600 border-blue-200 bg-blue-50'
   }
+
+  // 解析 NotebookLM 风格的 snippet
+  const parseSnippet = (snippet: string) => {
+    if (!snippet) return { summary: '', full: '' };
+
+    // 提取执行摘要作为预览
+    const summaryMatch = snippet.match(/【战略执行摘要】\s*([\s\S]*?)(?=\n\n|【|$)/);
+    const summary = summaryMatch ? summaryMatch[1].trim() : snippet;
+
+    // 格式化主体内容，加粗关键标题
+    const formatted = snippet.replace(/(【.*?】)/g, '**$1**');
+
+    return { summary, full: formatted };
+  }
+
+  const { summary, full } = parseSnippet(item.content);
+
+  // Hydration guard
+  if (!mounted) return null;
 
   return (
     <div
@@ -39,9 +64,14 @@ export function IntelligenceCard({ item }: IntelligenceCardProps) {
         </div>
 
         <div className="flex-grow min-w-0">
-          <p className="text-base font-bold text-slate-900 truncate group-hover:text-blue-700 transition-colors">
-            {item.content}
+          <p className={`text-base font-bold text-slate-900 transition-colors ${isExpanded ? '' : 'truncate'} group-hover:text-blue-700`}>
+            {item.title}
           </p>
+          {!isExpanded && (
+            <p className="text-xs text-slate-500 truncate mt-0.5 opacity-70">
+              {summary}
+            </p>
+          )}
         </div>
 
         <div className="flex-shrink-0 flex items-center gap-4">
@@ -53,7 +83,7 @@ export function IntelligenceCard({ item }: IntelligenceCardProps) {
       </div>
 
       {isExpanded && (
-        <div className="px-24 pb-8 pt-2 animate-in slide-in-from-top-2 duration-200">
+        <div className="px-8 md:px-24 pb-8 pt-2 animate-in slide-in-from-top-2 duration-200">
           <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-md space-y-6">
             <div className="flex items-start justify-between gap-6">
               <h3 className="text-xl font-black text-slate-900 leading-tight tracking-tight">
@@ -81,19 +111,22 @@ export function IntelligenceCard({ item }: IntelligenceCardProps) {
               </div>
               <div className="space-y-1.5">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</span>
-                <p className="text-xs font-bold text-slate-700">{new Date(item.published_at || item.created_at).toLocaleString()}</p>
+                <p className="text-xs font-bold text-slate-700">
+                  {new Date(item.published_at || item.created_at).toLocaleString('zh-CN')}
+                </p>
               </div>
             </div>
 
             <div className="pt-2">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Raw Intelligence Context</span>
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-4 h-4 text-blue-600" />
+                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Strategic Briefing (NotebookLM Style)</span>
               </div>
-              <p className="text-sm leading-relaxed text-slate-600 font-medium">
-                系统已对该公关稿进行脱水处理。原始信息聚焦于 <span className="text-slate-900 font-bold">{item.title}</span>。
-                该情报已被标记为 {(item.quality_score || 0) >= 8.5 ? '战略级' : '监测级'} 节点。
-              </p>
+              <div className="text-sm leading-loose text-slate-700 whitespace-pre-wrap font-medium">
+                {full.split('**').map((part, i) =>
+                  i % 2 === 1 ? <strong key={i} className="text-slate-900 block mt-4 mb-1">{part}</strong> : part
+                )}
+              </div>
             </div>
           </div>
         </div>

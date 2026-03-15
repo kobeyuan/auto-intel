@@ -27,21 +27,26 @@ import { generateDailySynthesis } from '@/utils/intelligence'
 
 // 定义子板块配置
 const SUB_SECTIONS = [
-  { id: 'gtc', label: 'GTC 2026 | 英伟达大会', icon: Cpu, keywords: ['GTC', 'NVIDIA', '英伟达', 'Blackwell'] },
+  { id: 'gtc-insight', label: 'GTC 2026 | 英伟达大会', icon: Cpu, keywords: ['GTC', 'NVIDIA', '英伟达', 'Blackwell', 'Rubin'] },
   { id: 'openclaw', label: 'OpenClaw | 具身智能', icon: Brain, keywords: ['OpenClaw', '智爪', '具身智能', 'Robotics', 'Isaac'] },
-  { id: 'adas', label: 'Autonomous Driving | 智能驾驶', icon: Car, keywords: ['智驾', 'FSD', '自动驾驶', 'ADS', '端到端'] },
-  { id: 'cockpit', label: 'Smart Cockpit | 智能座舱', icon: Zap, keywords: ['座舱', '鸿蒙', '大模型', '语音', '屏幕'] },
-  { id: 'sensor', label: 'Sensor | 传感器', icon: Radio, keywords: ['激光雷达', '4D雷达', '雷达', '感知', 'LiDAR'] },
+  { id: 'autonomous-driving', label: 'Autonomous Driving | 智能驾驶', icon: Car, keywords: ['智驾', 'FSD', '自动驾驶', 'ADS', '端到端', 'World Model'] },
+  { id: 'smart-cockpit', label: 'Smart Cockpit | 智能座舱', icon: Zap, keywords: ['座舱', '鸿蒙', '大模型', '语音', '屏幕', '8295'] },
+  { id: 'sensors', label: 'Sensor | 传感器', icon: Radio, keywords: ['激光雷达', '4D雷达', '雷达', '感知', 'LiDAR'] },
   { id: 'ota', label: 'OTA Updates | 软件升级', icon: RefreshCw, keywords: ['OTA', '升级', '更新', '软件'] },
 ]
 
 export default function Home() {
   const [intelligence, setIntelligence] = useState<IndustryNews[]>([])
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string>('')
   const [dailySummary, setDailySummary] = useState('')
   const [activeTab, setActiveTab] = useState<'all' | 'competitor' | 'tech' | 'policy' | 'voc'>('all')
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -68,7 +73,7 @@ export default function Home() {
         metadata: item.metadata || { tags: item.keywords || [] },
         created_at: item.created_at,
         published_at: item.published_at || item.created_at,
-        keywords: item.keywords
+        keywords: item.keywords || []
       }))
 
       setIntelligence(formatted)
@@ -83,8 +88,10 @@ export default function Home() {
   }
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (mounted) {
+      fetchData()
+    }
+  }, [mounted])
 
   const mainTabs = [
     { id: 'all', label: 'Dashboard | 全量情报', icon: LayoutDashboard, color: 'text-slate-500' },
@@ -100,9 +107,18 @@ export default function Home() {
     if (activeTab === 'all') {
       SUB_SECTIONS.forEach(sub => {
         groups[sub.id] = intelligence.filter(item => {
-          const titleMatch = item.title?.toLowerCase().includes(sub.id.toLowerCase());
-          const keywordMatch = item.keywords?.some(k => sub.keywords.some(sk => k.toLowerCase().includes(sk.toLowerCase())));
-          return titleMatch || keywordMatch;
+          // 匹配逻辑：优先匹配 category，其次匹配关键词
+          if (item.category === sub.id) return true;
+
+          const titleLower = item.title?.toLowerCase() || '';
+          const snippetLower = item.content?.toLowerCase() || '';
+          const keywords = item.keywords || [];
+
+          return sub.keywords.some(sk =>
+            titleLower.includes(sk.toLowerCase()) ||
+            snippetLower.includes(sk.toLowerCase()) ||
+            keywords.some(k => k.toLowerCase().includes(sk.toLowerCase()))
+          );
         }).slice(0, 8)
       })
       const classifiedIds = new Set(Object.values(groups).flat().map(i => i.id))
@@ -116,8 +132,11 @@ export default function Home() {
   }, [intelligence, activeTab])
 
   const toggleSection = (id: string) => {
-    setExpandedSections(prev => ({ ...prev, [id]: prev[id] === undefined ? false : !prev[id] }))
+    setExpandedSections(prev => ({ ...prev, [id]: prev[id] === false ? true : false }))
   }
+
+  // Hydration guard
+  if (!mounted) return null;
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100 font-sans antialiased">
@@ -242,9 +261,9 @@ export default function Home() {
                           </div>
 
                           <p className="text-[14px] font-medium text-slate-700 leading-[1.8] tracking-tight antialiased">
-                            {groupId === 'gtc' && (
+                            {groupId === 'gtc-insight' && (
                               <>
-                                英伟达通过 Blackwell 架构实现了从“单体芯片”向“系统级集群”的范式转移。其 NVLink 交换机技术将 72 颗 GPU 融合成一个巨大的虚拟算力池，这不仅是算力的提升，更是对大模型训练效率的代际垄断。
+                                英伟达通过 Rubin 架构实现了从“单体芯片”向“系统级集群”的范式转移。其 NVLink 交换机技术将 72 颗 GPU 融合成一个巨大的虚拟算力池，这不仅是算力的提升，更是对大模型训练效率的代际垄断。
                                 <span className="text-blue-600 font-black mx-2">// So What:</span>
                                 对比亚迪而言，这意味着单纯堆叠算力卡已失去边际效应。我们必须在“璇玑架构”中实现更深度的软硬解耦，并针对端侧推理进行非对称优化。建议立即评估 DRIVE Thor 在璇玑架构中的底层适配深度。
                               </>
@@ -256,14 +275,14 @@ export default function Home() {
                                 比亚迪应将具身智能视为“移动终端”的终极形态。重点关注其在工业生产线自动化（工业机器人）以及未来车载助理物理交互（具身座舱）中的应用。建议研发部门立即开启 OpenClaw 与 Isaac 平台的联合测试，探索其在复杂非标场景下的泛化控制能力。
                               </>
                             )}
-                            {groupId === 'sensor' && (
+                            {groupId === 'sensors' && (
                               <>
                                 传感器领域正经历“图像级”革命。4D 成像雷达与固态激光雷达的规模化 SOP 标志着全天候感知能力的基准线被大幅拉高。
                                 <span className="text-blue-600 font-black mx-2">// So What:</span>
                                 比亚迪应采取“分级感知架构”：高端车型通过 4D 成像雷达补足长距离感知短板，中低端车型通过璇玑架构的算法冗余实现对昂贵传感器的减配降本。重点建立自研的感知融合大模型，实现对物理世界的“语义级”深度理解。
                               </>
                             )}
-                            {(!['gtc', 'openclaw', 'adas', 'cockpit', 'ota', 'sensor'].includes(groupId)) && (
+                            {(!['gtc-insight', 'openclaw', 'autonomous-driving', 'smart-cockpit', 'ota', 'sensors'].includes(groupId)) && (
                               <>
                                 当前板块聚焦于行业底层的代际变革。AI 研判显示，竞争正从单一参数比拼转向底层全栈自研能力的系统性对抗。
                                 <span className="text-blue-600 font-black mx-2">// So What:</span>
