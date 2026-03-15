@@ -28,10 +28,10 @@ import { generateDailySynthesis } from '@/utils/intelligence'
 // 定义子板块配置
 const SUB_SECTIONS = [
   { id: 'gtc', label: 'GTC 2026 | 英伟达大会', icon: Cpu, keywords: ['GTC', 'NVIDIA', '英伟达', 'Blackwell'] },
-  { id: 'openclaw', label: 'OpenClaw | 智爪大模型', icon: Brain, keywords: ['OpenClaw', '智爪', 'AI', '大模型'] },
+  { id: 'openclaw', label: 'OpenClaw | 具身智能', icon: Brain, keywords: ['OpenClaw', '智爪', '具身智能', 'Robotics', 'Isaac'] },
   { id: 'adas', label: 'Autonomous Driving | 智能驾驶', icon: Car, keywords: ['智驾', 'FSD', '自动驾驶', 'ADS', '端到端'] },
   { id: 'cockpit', label: 'Smart Cockpit | 智能座舱', icon: Zap, keywords: ['座舱', '鸿蒙', '大模型', '语音', '屏幕'] },
-  { id: 'sensor', label: 'Sensor | 传感器', icon: Radio, keywords: ['激光雷达', '雷达', '摄像头', '感知'] },
+  { id: 'sensor', label: 'Sensor | 传感器', icon: Radio, keywords: ['激光雷达', '4D雷达', '雷达', '感知', 'LiDAR'] },
   { id: 'ota', label: 'OTA Updates | 软件升级', icon: RefreshCw, keywords: ['OTA', '升级', '更新', '软件'] },
 ]
 
@@ -251,37 +251,16 @@ export default function Home() {
                             )}
                             {groupId === 'openclaw' && (
                               <>
-                                OpenClaw 作为新一代开源大模型，正在重塑行业对“轻量化与高性能”的认知。其独特的架构设计使得在端侧设备上运行百亿级参数模型成为可能，这将极大地降低智能终端的 AI 部署成本。
+                                OpenClaw 具身智能 (Embodied AI) 正在重新定义机器人的物理交互上限。其将大模型的语义理解能力直接映射到末端执行器的扭矩控制上，实现了从“脑”到“手”的无缝贯通。
                                 <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                比亚迪应重点关注 OpenClaw 在车载算力平台上的适配性。如果能将这一开源生态引入璇玑架构，我们将获得一个强大的、可定制的端侧大脑，而不必依赖封闭的第三方方案。建议研发部门立即开启 OpenClaw 1.0 的实车部署测试，评估其在语音交互与座舱 Agent 场景中的延迟与精度表现。
-                              </>
-                            )}
-                            {groupId === 'adas' && (
-                              <>
-                                行业已全面进入“无图端到端”的决战期。特斯拉 FSD V12 的大规模推送证明了“世界模型”在处理极端长尾场景（Corner Cases）时的优越性。目前的竞争焦点已从“规则代码”转向“高质量数据闭环”。
-                                <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                比亚迪的优势在于庞大的在途车队数据量。战略上应由“功能堆叠”转向“体验闭环”，重点突破端到端架构在璇玑平台上的实时推理效能，确保在智驾第一梯队中不掉队。
-                              </>
-                            )}
-                            {groupId === 'cockpit' && (
-                              <>
-                                智能座舱的竞争正从“屏幕尺寸”转向“AI Agent 交互深度”。大模型在端侧的落地（On-device AI）将彻底重塑人车关系。高通 8295 及其后续芯片的算力冗余将成为 AI 原生应用的温床。
-                                <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                比亚迪应警惕座舱体验的“同质化陷阱”。我们的机会在于将璇玑架构的底层车辆控制权与 AI 大模型深度融合，打造“懂车、懂人、懂环境”的超级智能体。
-                              </>
-                            )}
-                            {groupId === 'ota' && (
-                              <>
-                                OTA 已成为衡量车企“软件定义汽车”能力的唯一金标准。头部新势力（如理想、小鹏）已实现算法周更，这背后是极其强大的 DevOps 体系。
-                                <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                对比亚迪这种巨头，OTA 的挑战在于“碎片化管理”。战略上需通过璇玑架构实现底层软件的标准化，建立统一的云端影子模式测试平台。确保车辆在全生命周期内具备持续增值的能力。
+                                比亚迪应将具身智能视为“移动终端”的终极形态。重点关注其在工业生产线自动化（工业机器人）以及未来车载助理物理交互（具身座舱）中的应用。建议研发部门立即开启 OpenClaw 与 Isaac 平台的联合测试，探索其在复杂非标场景下的泛化控制能力。
                               </>
                             )}
                             {groupId === 'sensor' && (
                               <>
-                                传感器领域正经历“图像级”革命。华为 896 线激光雷达的发布，标志着传感器已具备超越人类视觉的感知精度。同时，纯视觉方案在成本上的优势依然对大众化市场具有致命吸引力。
+                                传感器领域正经历“图像级”革命。4D 成像雷达与固态激光雷达的规模化 SOP 标志着全天候感知能力的基准线被大幅拉高。
                                 <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                比亚迪应采取“分级策略”：高端车型通过超高线数雷达建立安全护城河，中低端车型通过璇玑架构的强大感知算法实现纯视觉平替。建立自研的感知大模型，实现对物理世界的“语义级”理解。
+                                比亚迪应采取“分级感知架构”：高端车型通过 4D 成像雷达补足长距离感知短板，中低端车型通过璇玑架构的算法冗余实现对昂贵传感器的减配降本。重点建立自研的感知融合大模型，实现对物理世界的“语义级”深度理解。
                               </>
                             )}
                             {(!['gtc', 'openclaw', 'adas', 'cockpit', 'ota', 'sensor'].includes(groupId)) && (

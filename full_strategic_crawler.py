@@ -278,27 +278,35 @@ class IntelligenceCrawler:
         return {"score": 5, "reason": "分析异常，默认中等分数"}
 
     def ai_analyze(self, title: str, snippet: str, category: str) -> Dict[str, Any]:
-        """AI 深度分析：强制输出战略冲击，杜绝废话"""
+        """AI 深度分析：NotebookLM 级战略简报，强制深度穿透"""
         if not GEMINI_API_KEY:
             return None
 
+        # 针对不同分类定制化 Prompt，确保“智能驾驶”不再输出代码相关内容
+        category_focus = ""
+        if category == "autonomous-driving":
+            category_focus = "【智驾专项要求】禁止输出任何代码、Git 仓库或具体编程实现。必须聚焦于：算法架构演进（如端到端、世界模型）、算力平台竞争、行业准入政策、量产体验对比及对比亚迪的战略挤压。"
+
         prompt = f"""
-        作为比亚迪【智能化产品规划部 & 战略部】高级研判专家，请对以下行业资讯进行深度研判。
+        作为比亚迪【战略委员会 & 智能化技术中心】顶级研究员，请对以下资讯进行 NotebookLM 级别的“战略深度研判 (Strategic Briefing)”。
+
+        {category_focus}
 
         【研判规则】
-        1. 拒绝对事实的二次复述。不要写“某公司发布了某产品”这种废话。
-        2. 采用结构化短句，信息密度极高。
-        3. 必须回答 So What，直接给出战略穿透结论。
+        1. 深度穿透：禁止复述事实。必须挖掘表象背后的底层逻辑（如：供应链控制权转移、技术代际降维打击）。
+        2. 战略协同：从比亚迪“璇玑架构”和“垂直整合”的角度，思考这对我们的威胁或机遇。
+        3. 具身智能专项：如果涉及 Robotics/Isaac，必须探讨其在工业制造与实车大脑中的协同。
 
         【资讯标题】: {title}
         【内容摘要】: {snippet}
 
-        请严格以 JSON 格式输出，总字数控制在 60-80 字：
+        请严格以 JSON 格式输出（中英双语核心词）：
         {{
-            "what": "【核心动作】一句话说清谁、发布了什么核心功能/技术。",
-            "impact": "【战略穿透】一针见血指出其对竞争格局的影响（如降本效果、算力代差、体验壁垒）。",
-            "focus": ["关键行动点1", "关键行动点2"],
-            "sentiment": "positive/neutral/negative"
+            "executive_summary": "【战略执行摘要】一句话概括技术/商业本质及对比亚迪的直接冲击。",
+            "strategic_countermeasures": "【战略对策】针对此动态，比亚迪技术研发或产品规划应采取的具体行动点（2-3点）。",
+            "industry_trajectory": "【行业轨迹】判断该动态如何改变未来 12-24 个月的竞争范式。",
+            "sentiment": "positive/neutral/negative",
+            "keywords": ["中英关键词1", "中英关键词2"]
         }}
         """
 
@@ -335,19 +343,12 @@ class IntelligenceCrawler:
                     try:
                         return json.loads(json_str)
                     except json.JSONDecodeError:
-                        # 最后的尝试：提取标题和分数
-                        score_match = re.search(r'"score":\s*(\d+)', content)
-                        reason_match = re.search(r'"reason":\s*"([^"]+)"', content)
-                        if score_match:
-                            return {
-                                "score": int(score_match.group(1)),
-                                "reason": reason_match.group(1) if reason_match else "解析失败，仅提取到分数"
-                            }
+                        print(f"   ⚠️ JSON 解析失败，原文: {content[:100]}...")
                 elif resp.status_code == 503:
                     print(f"   ⏳ AI 服务繁忙 (503), 第 {attempt+1} 次重试...")
                     time.sleep(5)
                 else:
-                    print(f"   ⚠️ Kimi 响应错误 ({resp.status_code}): {resp.text}")
+                    print(f"   ⚠️ Gemini 响应错误 ({resp.status_code}): {resp.text}")
                     break
         except Exception as e:
             print(f"   ⚠️ AI 分析失败: {e}")
@@ -361,14 +362,22 @@ class IntelligenceCrawler:
             {"query": "NVIDIA GTC 2026 Jensen Huang keynote highlights", "category": "gtc-insight"},
             {"query": "英伟达 GTC 2026 全球 AI 战略 趋势", "category": "gtc-insight"},
             {"query": "NVIDIA Blackwell Ultra B300 架构 细节 2026", "category": "gtc-insight"},
-            {"query": "GTC 2026 具身智能 机器人 Isaac 平台 最新", "category": "gtc-insight"},
             {"query": "NVIDIA Omniverse 2026 工业数字孪生 汽车制造", "category": "gtc-insight"},
             {"query": "GTC 2026 AI Agents NIMs 企业级应用", "category": "gtc-insight"},
 
-            # 自动驾驶 (端到端与大模型)
-            {"query": "Tesla FSD v12 v13 v14 rollout 2026", "category": "autonomous-driving"},
-            {"query": "华为 乾崑 ADS 4.0 5.0 路线图", "category": "autonomous-driving"},
-            {"query": "端到端 自动驾驶 算法 突破 2026", "category": "autonomous-driving"},
+            # OpenClaw & 具身智能 (重点强化)
+            {"query": "OpenClaw Embodied AI Robotics integration Isaac platform", "category": "openclaw"},
+            {"query": "智爪大模型 具身智能 机器人 璇玑架构 协同", "category": "openclaw"},
+            {"query": "OpenClaw 1.0 2.0 architecture deep learning robotics", "category": "openclaw"},
+
+            # 自动驾驶 (端到端与大模型 - 聚焦行业趋势与技术演进)
+            {"query": "Autonomous driving end-to-end foundation models 2026 trends", "category": "autonomous-driving"},
+            {"query": "Tesla FSD v13 v14 technical architecture evolution 2026", "category": "autonomous-driving"},
+            {"query": "Waymo vs Tesla FSD technical roadmap 2026 comparison", "category": "autonomous-driving"},
+            {"query": "华为 乾崑 ADS 4.0 5.0 架构 演进 2026", "category": "autonomous-driving"},
+            {"query": "端到端 自动驾驶 世界模型 World Models 行业 洞察", "category": "autonomous-driving"},
+            {"query": "L3 L4 自动驾驶 政策 准入 2026 趋势", "category": "autonomous-driving"},
+            {"query": "自动驾驶 芯片 算力 平台 演进 2026 NVIDIA Thor vs Huawei", "category": "autonomous-driving"},
 
             # 定向 OTA 专项搜索 (精准狙击头部新势力)
             {"query": "Tesla FSD V12 V13 推送 更新", "category": "ota"},
@@ -383,9 +392,11 @@ class IntelligenceCrawler:
             {"query": "车载 端侧 大模型 2026 落地 厂商", "category": "smart-cockpit"},
             {"query": "鸿蒙座舱 5.0 原生鸿蒙 汽车 生态 2026", "category": "smart-cockpit"},
 
-            # 传感器/前沿
+            # 传感器/前沿 (重点强化 4D Radar/Solid-state LiDAR)
+            {"query": "Next-gen 4D Imaging Radar 2026 automotive", "category": "sensors"},
+            {"query": "Solid-state LiDAR breakthroughs 2026 SOP", "category": "sensors"},
             {"query": "华为 896线 激光雷达 尊界 S800 搭载 2026", "category": "sensors"},
-            {"query": "千线级 激光雷达 2026 行业 排名", "category": "sensors"}
+            {"query": "Perception Hub next-gen sensor fusion 2026", "category": "sensors"}
         ]
 
         all_items = []
@@ -397,7 +408,8 @@ class IntelligenceCrawler:
                 filter_res = self.ai_filter(res['title'], res['snippet'])
                 score = filter_res.get('score', 0)
 
-                if score < 7:
+                # 提高门槛，NotebookLM 级质量要求
+                if score < 7.5:
                     print(f"   🗑️ 过滤丢弃 (得分: {score}): {filter_res.get('reason')}")
                     continue
 
@@ -406,11 +418,11 @@ class IntelligenceCrawler:
                 # 2. AI 深度研判 (仅对通过过滤的数据进行分析)
                 analysis = self.ai_analyze(res['title'], res['snippet'], task['category'])
 
-                # 构建最终展示的 snippet (三段式中文)
+                # 构建最终展示的 snippet (NotebookLM 风格战略简报)
                 if analysis:
-                    display_snippet = f"【AI分析】\n这是什么？ {analysis.get('what')}\n有什么影响？ {analysis.get('impact')}\n关注要点：\n"
-                    for i, p in enumerate(analysis.get('focus', []), 1):
-                        display_snippet += f"{i}. {p}\n"
+                    display_snippet = f"【战略执行摘要】\n{analysis.get('executive_summary')}\n\n"
+                    display_snippet += f"【战略对策】\n{analysis.get('strategic_countermeasures')}\n\n"
+                    display_snippet += f"【行业轨迹】\n{analysis.get('industry_trajectory')}"
                 else:
                     # 如果 AI 分析失败，也要确保内容中包含 2026，否则丢弃以保鲜
                     if "2026" not in res['title'] and "2026" not in res['snippet']:
@@ -420,24 +432,29 @@ class IntelligenceCrawler:
                 # 提取关键词作为战略标签
                 tags = []
                 if analysis and isinstance(analysis, dict):
-                    tags = analysis.get('focus', [])
+                    tags = analysis.get('keywords', [])
 
                 # 注入 2026 核心标签
                 if "2026" in res['title'] or "2026" in res['snippet']:
-                    tags.append("2026_TREND")
+                    if "2026_TREND" not in tags:
+                        tags.append("2026_TREND")
 
                 item = {
                     "title": res['title'],
                     "link": res['link'],
                     "snippet": display_snippet,
                     "category": task['category'],
-                    "source": "GTC/Strategic",
+                    "source": "NotebookLM/Strategic",
                     "quality_score": score,
                     "verified": True if analysis else False,
-                    "keywords": tags[:5],
+                    "keywords": tags[:6],
                     "created_at": datetime.now().isoformat(),
-                    "published_at": datetime.now().isoformat()
+                    "published_at": datetime.now().isoformat(),
+                    "sentiment": analysis.get('sentiment', 'neutral') if analysis else 'neutral'
                 }
+
+                all_items.append(item)
+                time.sleep(1.5)
                 # 额外映射 (适配现有表结构)
                 if "credibility_tier" in res: # 这里的 res 是搜索结果，不是 DB 字段
                     pass
