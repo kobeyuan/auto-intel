@@ -356,7 +356,7 @@ class IntelligenceCrawler:
 
     def run_full_update(self):
         # 针对各板块的搜索矩阵 (重点强化 2026 时效性 & 多元化洞察)
-        # 移除过度聚焦 Thor 芯片的查询，转向全方位 GTC 战略洞察
+        # 深度参考 api/update_intel.py 的多维矩阵策略
         search_matrix = [
             # GTC 专题 (多元化战略资讯)
             {"query": "NVIDIA GTC 2026 Jensen Huang keynote highlights", "category": "gtc-insight"},
@@ -364,39 +364,47 @@ class IntelligenceCrawler:
             {"query": "NVIDIA Blackwell Ultra B300 架构 细节 2026", "category": "gtc-insight"},
             {"query": "NVIDIA Omniverse 2026 工业数字孪生 汽车制造", "category": "gtc-insight"},
             {"query": "GTC 2026 AI Agents NIMs 企业级应用", "category": "gtc-insight"},
+            {"query": "比亚迪 智能化 GTC 2026 合作", "category": "gtc-insight"},
+            {"query": "BYD NVIDIA DRIVE Thor GTC 2026", "category": "gtc-insight"},
 
-            # OpenClaw & 具身智能 (重点强化)
+            # OpenClaw & 具身智能 (重点强化 - 深度对标 Embodied AI)
             {"query": "OpenClaw Embodied AI Robotics integration Isaac platform", "category": "openclaw"},
             {"query": "智爪大模型 具身智能 机器人 璇玑架构 协同", "category": "openclaw"},
             {"query": "OpenClaw 1.0 2.0 architecture deep learning robotics", "category": "openclaw"},
+            {"query": "OpenClaw Isaac Lab 仿真 环境 具身智能", "category": "openclaw"},
+            {"query": "特斯拉 Optimus Gen 3 vs OpenClaw 具身智能 对比", "category": "openclaw"},
 
             # 自动驾驶 (端到端与大模型 - 聚焦行业趋势与技术演进)
             {"query": "Autonomous driving end-to-end foundation models 2026 trends", "category": "autonomous-driving"},
-            {"query": "Tesla FSD v13 v14 technical architecture evolution 2026", "category": "autonomous-driving"},
+            {"query": "Tesla FSD v14 v15 technical architecture evolution 2026", "category": "autonomous-driving"},
             {"query": "Waymo vs Tesla FSD technical roadmap 2026 comparison", "category": "autonomous-driving"},
             {"query": "华为 乾崑 ADS 4.0 5.0 架构 演进 2026", "category": "autonomous-driving"},
             {"query": "端到端 自动驾驶 世界模型 World Models 行业 洞察", "category": "autonomous-driving"},
             {"query": "L3 L4 自动驾驶 政策 准入 2026 趋势", "category": "autonomous-driving"},
             {"query": "自动驾驶 芯片 算力 平台 演进 2026 NVIDIA Thor vs Huawei", "category": "autonomous-driving"},
+            {"query": "Tesla FSD 视觉方案 vs 华为 激光雷达方案 2026 演进", "category": "autonomous-driving"},
 
             # 定向 OTA 专项搜索 (精准狙击头部新势力)
-            {"query": "Tesla FSD V12 V13 推送 更新", "category": "ota"},
-            {"query": "理想汽车 OTA 智能座舱 5.0 6.0", "category": "ota"},
-            {"query": "小鹏汽车 天玑系统 XOS 升级", "category": "ota"},
-            {"query": "蔚来汽车 Banyan 智驾 系统更新", "category": "ota"},
-            {"query": "吉利 极氪 极越 OTA 智能化升级", "category": "ota"},
-            {"query": "小米汽车 SU7 OTA 升级 计划", "category": "ota"},
+            {"query": "Tesla FSD V13 V14 推送 更新 最新", "category": "ota"},
+            {"query": "理想汽车 OTA 智能座舱 6.0 7.0 路线图", "category": "ota"},
+            {"query": "小鹏汽车 天玑系统 XOS 5.5 6.0 升级", "category": "ota"},
+            {"query": "蔚来汽车 Banyan 3.0 4.0 智驾 系统更新", "category": "ota"},
+            {"query": "小米汽车 SU7 OTA 城市NOA 全量推送 计划", "category": "ota"},
+            {"query": "华为 乾崑 ADS 3.5 4.0 OTA 更新 功能", "category": "ota"},
 
             # 智能座舱
-            {"query": "骁龙 8775P 8295 舱驾一体 首发车型", "category": "smart-cockpit"},
+            {"query": "骁龙 8775P 8295 舱驾一体 2026 趋势", "category": "smart-cockpit"},
             {"query": "车载 端侧 大模型 2026 落地 厂商", "category": "smart-cockpit"},
             {"query": "鸿蒙座舱 5.0 原生鸿蒙 汽车 生态 2026", "category": "smart-cockpit"},
+            {"query": "AI Agents 车载座舱 2026 落地 场景", "category": "smart-cockpit"},
 
-            # 传感器/前沿 (重点强化 4D Radar/Solid-state LiDAR)
-            {"query": "Next-gen 4D Imaging Radar 2026 automotive", "category": "sensors"},
-            {"query": "Solid-state LiDAR breakthroughs 2026 SOP", "category": "sensors"},
-            {"query": "华为 896线 激光雷达 尊界 S800 搭载 2026", "category": "sensors"},
-            {"query": "Perception Hub next-gen sensor fusion 2026", "category": "sensors"}
+            # 传感器/前沿 (深度强化 4D Radar/Solid-state LiDAR/Next-gen Perception)
+            {"query": "Next-gen 4D Imaging Radar 2026 automotive breakthrough", "category": "sensors"},
+            {"query": "Solid-state LiDAR 192线 896线 breakthroughs 2026", "category": "sensors"},
+            {"query": "华为 896线 激光雷达 尊界 S800 搭载 技术细节", "category": "sensors"},
+            {"query": "Perception Hub next-gen sensor fusion 2026 架构", "category": "sensors"},
+            {"query": "特斯拉 4D 毫米波雷达 vs 纯视觉 2026 战略 变化", "category": "sensors"},
+            {"query": "固态激光雷达 量产 SOP 2026 厂商 进度", "category": "sensors"}
         ]
 
         all_items = []
