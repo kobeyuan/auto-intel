@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Activity, ShieldCheck, Terminal } from 'lucide-react';
+import { Sparkles, Activity, ShieldCheck, Terminal, Brain } from 'lucide-react';
 
 interface GlobalSynthesisPanelProps {
   summary: string;
@@ -13,7 +13,7 @@ export function GlobalSynthesisPanel({ summary, loading }: GlobalSynthesisPanelP
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    if (loading) {
+    if (loading || !summary) {
       setDisplayText('');
       setIndex(0);
       return;
@@ -29,66 +29,87 @@ export function GlobalSynthesisPanel({ summary, loading }: GlobalSynthesisPanelP
   }, [index, summary, loading]);
 
   return (
-    <section className="relative mb-12 group">
-      {/* 科技感背景网格 */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] rounded-[2rem] pointer-events-none" />
-      
-      <div className="relative p-8 rounded-[2rem] bg-slate-900/30 border border-slate-800 backdrop-blur-sm overflow-hidden ring-1 ring-white/5 shadow-2xl">
-        {/* 动态呼吸高光 */}
-        <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent animate-pulse" />
-        
-        <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center ring-2 ring-slate-900">
-                  <Brain className="w-4 h-4 text-white" />
-                </div>
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center ring-2 ring-slate-900">
-                  <Sparkles className="w-4 h-4 text-white" />
+    <section className="relative mb-20 group">
+      {/* 顶级终端风格：浅色高对比度专业版 */}
+      <div className="relative p-12 rounded-[2rem] bg-white border border-slate-200 shadow-xl overflow-hidden glow-card">
+        {/* 背景装饰：扫描线效果 - 弱化处理 */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(59,130,246,0.02)_50%,transparent_100%)] bg-[length:100%_4px] animate-scan pointer-events-none opacity-50" />
+
+        <div className="relative flex flex-col xl:flex-row gap-16 items-stretch">
+          {/* 左侧：核心推演结论 */}
+          <div className="flex-1 space-y-10">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-center shadow-sm">
+                <Brain className="w-9 h-9 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-blue-600 uppercase tracking-[0.5em] mb-2">
+                  Global Strategic Inference | 全球战略研判
+                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="w-1.5 h-4 bg-blue-600/30 rounded-full animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+                    ))}
+                  </div>
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Neural Processing Active</span>
                 </div>
               </div>
-              <div className="h-px w-8 bg-slate-800" />
-              <h2 className="text-xs font-black text-cyan-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                AI 全局态势推演 
-                <span className="flex gap-1">
-                  <span className="w-1 h-1 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1 h-1 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1 h-1 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </span>
-              </h2>
             </div>
 
-            <div className="relative min-h-[80px]">
+            <div className="relative">
               {loading ? (
-                <div className="space-y-3">
-                  <div className="h-4 bg-slate-800 rounded-full w-3/4 animate-pulse" />
-                  <div className="h-4 bg-slate-800 rounded-full w-full animate-pulse" />
-                  <div className="h-4 bg-slate-800 rounded-full w-2/3 animate-pulse" />
+                <div className="space-y-6">
+                  <div className="h-10 bg-slate-100 rounded-lg w-full animate-pulse" />
+                  <div className="h-10 bg-slate-100 rounded-lg w-5/6 animate-pulse" />
                 </div>
               ) : (
-                <p className="text-base md:text-lg font-medium text-slate-100 leading-relaxed tracking-tight">
-                  {displayText}
-                  <span className="inline-block w-1.5 h-5 bg-cyan-500 ml-1 animate-pulse align-middle" />
-                </p>
+                <div className="space-y-6">
+                  <p className="text-3xl md:text-4xl font-black text-slate-900 leading-[1.4] tracking-tight antialiased">
+                    {displayText}
+                    <span className="inline-block w-3 h-10 bg-blue-600 ml-3 animate-pulse align-bottom shadow-sm" />
+                  </p>
+                  <div className="flex gap-4">
+                    <span className="px-3 py-1 bg-blue-50 border border-blue-100 text-[10px] font-black text-blue-600 rounded uppercase tracking-widest">
+                      Strategic Priority: Alpha
+                    </span>
+                    <span className="px-3 py-1 bg-emerald-50 border border-emerald-100 text-[10px] font-black text-emerald-600 rounded uppercase tracking-widest">
+                      Impact: Paradigm Shift
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
           </div>
 
-          <div className="shrink-0 w-full lg:w-48 flex lg:flex-col gap-3">
-            <div className="flex-1 p-3 bg-slate-950/50 rounded-xl border border-slate-800/50">
-              <div className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                系统置信度
+          {/* 右侧：高对比度决策指标 (AlphaSense 风格) */}
+          <div className="shrink-0 w-full xl:w-80 flex flex-col gap-6">
+            <div className="flex-1 p-8 bg-slate-50 border-l-4 border-emerald-500 rounded-r-2xl flex flex-col justify-center shadow-sm">
+              <div className="text-xs font-black text-slate-500 uppercase mb-4 tracking-[0.2em] flex items-center justify-between">
+                <span>System Confidence</span>
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
               </div>
-              <div className="text-lg font-black text-white italic">98.4%</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-6xl font-black text-slate-900 tracking-tighter">98.4</span>
+                <span className="text-xl font-black text-emerald-600">%</span>
+              </div>
+              <div className="mt-4 h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 w-[98.4%] shadow-sm" />
+              </div>
             </div>
-            <div className="flex-1 p-3 bg-slate-950/50 rounded-xl border border-slate-800/50">
-              <div className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
-                <Terminal className="w-3 h-3 text-cyan-500" />
-                推演节点
+
+            <div className="flex-1 p-8 bg-slate-50 border-l-4 border-blue-500 rounded-r-2xl flex flex-col justify-center shadow-sm">
+              <div className="text-xs font-black text-slate-500 uppercase mb-4 tracking-[0.2em] flex items-center justify-between">
+                <span>Intelligence Nodes</span>
+                <Terminal className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="text-lg font-black text-white italic">1,240+</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-6xl font-black text-slate-900 tracking-tighter">1,240</span>
+                <span className="text-xl font-black text-blue-600">+</span>
+              </div>
+              <p className="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Aggregated from 48 Global Sources
+              </p>
             </div>
           </div>
         </div>
@@ -96,5 +117,3 @@ export function GlobalSynthesisPanel({ summary, loading }: GlobalSynthesisPanelP
     </section>
   );
 }
-
-import { Brain } from 'lucide-react';

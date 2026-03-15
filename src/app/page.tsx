@@ -27,11 +27,12 @@ import { generateDailySynthesis } from '@/utils/intelligence'
 
 // 定义子板块配置
 const SUB_SECTIONS = [
-  { id: 'gtc', label: 'GTC 2026', icon: Cpu, keywords: ['GTC', 'NVIDIA', '英伟达', 'Blackwell'] },
-  { id: 'adas', label: '智能驾驶', icon: Car, keywords: ['智驾', 'FSD', '自动驾驶', 'ADS', '端到端'] },
-  { id: 'cockpit', label: '智能座舱', icon: Zap, keywords: ['座舱', '鸿蒙', '大模型', '语音', '屏幕'] },
-  { id: 'sensor', label: '传感器', icon: Radio, keywords: ['激光雷达', '雷达', '摄像头', '感知'] },
-  { id: 'ota', label: 'OTA 升级', icon: RefreshCw, keywords: ['OTA', '升级', '更新', '软件'] },
+  { id: 'gtc', label: 'GTC 2026 | 英伟达大会', icon: Cpu, keywords: ['GTC', 'NVIDIA', '英伟达', 'Blackwell'] },
+  { id: 'openclaw', label: 'OpenClaw | 智爪大模型', icon: Brain, keywords: ['OpenClaw', '智爪', 'AI', '大模型'] },
+  { id: 'adas', label: 'Autonomous Driving | 智能驾驶', icon: Car, keywords: ['智驾', 'FSD', '自动驾驶', 'ADS', '端到端'] },
+  { id: 'cockpit', label: 'Smart Cockpit | 智能座舱', icon: Zap, keywords: ['座舱', '鸿蒙', '大模型', '语音', '屏幕'] },
+  { id: 'sensor', label: 'Sensor | 传感器', icon: Radio, keywords: ['激光雷达', '雷达', '摄像头', '感知'] },
+  { id: 'ota', label: 'OTA Updates | 软件升级', icon: RefreshCw, keywords: ['OTA', '升级', '更新', '软件'] },
 ]
 
 export default function Home() {
@@ -86,11 +87,11 @@ export default function Home() {
   }, [])
 
   const mainTabs = [
-    { id: 'all', label: '全量情报', icon: LayoutDashboard, color: 'text-slate-400' },
-    { id: 'competitor', label: '竞品 X 光机', icon: Target, color: 'text-red-500', category: 'gtc-insight' },
-    { id: 'tech', label: '技术罗盘', icon: Compass, color: 'text-cyan-500', category: 'autonomous-driving' },
-    { id: 'policy', label: '政策红线', icon: Scale, color: 'text-amber-500', category: 'sensors' },
-    { id: 'voc', label: '用户声音', icon: MessageSquare, color: 'text-purple-500', category: 'ota' },
+    { id: 'all', label: 'Dashboard | 全量情报', icon: LayoutDashboard, color: 'text-slate-500' },
+    { id: 'competitor', label: 'Competitors | 竞品 X 光机', icon: Target, color: 'text-red-600', category: 'gtc-insight' },
+    { id: 'tech', label: 'Tech Radar | 技术罗盘', icon: Compass, color: 'text-blue-600', category: 'autonomous-driving' },
+    { id: 'policy', label: 'Regulatory | 政策红线', icon: Scale, color: 'text-amber-600', category: 'sensors' },
+    { id: 'voc', label: 'VOC | 用户声音', icon: MessageSquare, color: 'text-purple-600', category: 'ota' },
   ]
 
   const groupedData = useMemo(() => {
@@ -102,13 +103,13 @@ export default function Home() {
           const titleMatch = item.title?.toLowerCase().includes(sub.id.toLowerCase());
           const keywordMatch = item.keywords?.some(k => sub.keywords.some(sk => k.toLowerCase().includes(sk.toLowerCase())));
           return titleMatch || keywordMatch;
-        }).slice(0, 8) // 强制信息节流
+        }).slice(0, 8)
       })
       const classifiedIds = new Set(Object.values(groups).flat().map(i => i.id))
       groups['others'] = intelligence.filter(item => !classifiedIds.has(item.id)).slice(0, 8)
     } else {
       const activeCategory = mainTabs.find(t => t.id === activeTab)?.category
-      groups[activeTab] = intelligence.filter(item => item.category === activeCategory).slice(0, 8) // 强制信息节流
+      groups[activeTab] = intelligence.filter(item => item.category === activeCategory).slice(0, 8)
     }
 
     return groups
@@ -119,128 +120,178 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-slate-900 selection:bg-blue-500/30 font-sans">
+    <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100 font-sans antialiased">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full" />
-        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-indigo-400/10 blur-[100px] rounded-full" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:60px_60px] opacity-30 scifi-grid" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_800px_at_50%_-100px,#f1f5f9,transparent)]" />
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-6 py-12">
+      <div className="relative w-full max-w-[1800px] mx-auto px-8 py-12">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
-          <div className="flex items-center gap-5">
-            <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-xl shadow-blue-500/20">
-              <Brain className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-6">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-700 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-200">
+              <Radar className="w-8 h-8 text-white animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900">
-                Intelligence <span className="text-blue-600">Command Center</span>
+              <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">
+                BYD <span className="text-blue-600">Strategic Terminal</span>
               </h1>
-              <p className="text-slate-400 text-[10px] mt-0.5 font-bold uppercase tracking-[0.2em]">
-                Strategic Planning Unit • v2.2
-              </p>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className="px-2 py-0.5 bg-blue-100 border border-blue-200 text-[10px] font-black text-blue-700 rounded uppercase tracking-tighter">
+                  Confidential
+                </span>
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">
+                  Intell-System v3.0 // 璇玑架构适配版
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="px-4 py-2 bg-white/80 backdrop-blur-md border border-slate-200 rounded-full shadow-sm">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                System Online
+          <div className="flex items-center gap-4">
+            <div className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm">
+              <span className="text-[11px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]" />
+                Neural Uplink Stable
               </span>
             </div>
-            <button onClick={fetchData} disabled={loading} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-all active:scale-95">
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin text-blue-500' : ''}`} />
+            <button onClick={fetchData} disabled={loading} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all active:scale-95 shadow-sm">
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin text-blue-600' : ''}`} />
             </button>
           </div>
         </header>
 
         <GlobalSynthesisPanel summary={dailySummary} loading={loading} />
 
-        <nav className="flex flex-wrap gap-2 mb-12 p-1.5 bg-slate-100/50 backdrop-blur-sm border border-slate-200/60 rounded-2xl w-fit">
+        <nav className="flex flex-wrap gap-2 mb-12 p-1.5 bg-white/50 backdrop-blur-md border border-slate-200 rounded-2xl w-fit shadow-sm">
           {mainTabs.map((s) => (
             <button
               key={s.id}
               onClick={() => setActiveTab(s.id as any)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${
                 activeTab === s.id
-                ? 'bg-white text-blue-600 shadow-md shadow-blue-500/5 border border-blue-100'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-white'
               }`}
             >
-              <s.icon className={`w-4 h-4 ${activeTab === s.id ? 'text-blue-600' : 'text-slate-400'}`} />
+              <s.icon className={`w-4 h-4 ${activeTab === s.id ? 'text-white' : 'text-slate-400'}`} />
               {s.label}
             </button>
           ))}
         </nav>
 
-        <div className="space-y-10">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 items-start">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 space-y-4">
-              <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                Initializing Strategic Nodes...
+            <div className="col-span-full flex flex-col items-center justify-center py-32 space-y-6">
+              <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin shadow-sm" />
+              <p className="text-xs font-black text-blue-600 uppercase tracking-[0.5em]">
+                Synchronizing Strategic Matrix...
               </p>
             </div>
           ) : Object.entries(groupedData).length === 0 || Object.values(groupedData).every(items => items.length === 0) ? (
-            <div className="bg-white/40 backdrop-blur-md border border-slate-200 rounded-[2rem] p-20 text-center">
-              <div className="inline-flex p-4 bg-slate-50 rounded-2xl mb-6">
-                <Radar className="w-8 h-8 text-slate-300" />
+            <div className="col-span-full bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem] p-32 text-center shadow-inner">
+              <div className="inline-flex p-6 bg-slate-100 rounded-3xl mb-8">
+                <Radar className="w-12 h-12 text-slate-400" />
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">No Active Intelligence</h3>
-              <p className="text-xs text-slate-400 mt-2 font-medium">当前雷达范围内未发现符合战略评分的情报节点。</p>
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-widest">No Active Intelligence</h3>
+              <p className="text-sm text-slate-500 mt-4 font-medium">当前雷达范围内未发现符合战略评分的情报节点。</p>
             </div>
           ) : (
             Object.entries(groupedData).map(([groupId, items]) => {
               if (items.length === 0) return null;
               const subInfo = SUB_SECTIONS.find(s => s.id === groupId) || mainTabs.find(t => t.id === groupId);
               const isExpanded = expandedSections[groupId] !== false;
-              const topItems = items.slice(0, 5);
-              const otherItems = items.slice(5);
+              const topItems = items.slice(0, 8);
 
               return (
-                <section key={groupId} className="bg-white/60 backdrop-blur-md border border-slate-200/80 rounded-[2rem] shadow-sm overflow-hidden transition-all hover:shadow-md">
+                <section key={groupId} className="flex flex-col bg-white/70 backdrop-blur-xl border border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden transition-all hover:border-blue-200 group/section h-full glow-card">
                   <div
-                    className="flex items-center justify-between px-8 py-6 cursor-pointer hover:bg-slate-50/50 transition-all"
+                    className="flex items-center justify-between px-10 py-8 cursor-pointer hover:bg-slate-50/50 transition-all border-b border-slate-100"
                     onClick={() => toggleSection(groupId)}
                   >
-                    <div className="flex items-center gap-5">
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                        {subInfo?.icon ? <subInfo.icon className="w-5 h-5 text-blue-600" /> : <Activity className="w-5 h-5 text-blue-600" />}
+                    <div className="flex items-center gap-6">
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group-hover/section:border-blue-200 transition-colors shadow-sm">
+                        {subInfo?.icon ? <subInfo.icon className="w-6 h-6 text-blue-600" /> : <Activity className="w-6 h-6 text-blue-600" />}
                       </div>
                       <div>
-                        <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase">{subInfo?.label || '其他情报'}</h2>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{items.length} Nodes</span>
+                        <h2 className="text-xl font-black text-slate-900 tracking-widest uppercase">{subInfo?.label || '其他情报'}</h2>
+                        <div className="flex items-center gap-4 mt-2">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{items.length} Nodes Detected</span>
                           <div className="h-1 w-1 rounded-full bg-slate-200" />
-                          <span className="text-[10px] font-bold text-blue-500/80 uppercase tracking-widest">
+                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">
                             Peak Score: {(items[0]?.quality_score || 0).toFixed(1)}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full">
-                        <TrendingUp className="w-3 h-3 text-blue-500" />
-                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-tighter">AI 趋势研判</span>
+                    <div className="flex items-center gap-6">
+                      <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-100 rounded-md">
+                        <TrendingUp className="w-3 h-3 text-blue-600" />
+                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-tighter">AI 研判中</span>
                       </div>
-                      {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-300" /> : <ChevronDown className="w-5 h-5 text-slate-300" />}
+                      {isExpanded ? <ChevronUp className="w-6 h-6 text-slate-400" /> : <ChevronDown className="w-6 h-6 text-slate-400" />}
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="px-2 pb-6">
-                      <div className="mx-6 mb-6 p-5 bg-blue-50/40 border border-blue-100/50 rounded-2xl">
-                        <div className="flex items-start gap-4">
-                          <div className="p-2 bg-white rounded-lg shadow-sm">
-                            <Brain className="w-4 h-4 text-blue-500" />
+                    <div className="flex flex-col flex-1">
+                      <div className="px-10 py-8 bg-slate-50/30 border-b border-slate-100">
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3">
+                            <div className="h-px flex-1 bg-gradient-to-r from-blue-500/20 to-transparent" />
+                            <span className="text-[11px] font-black text-blue-600 uppercase tracking-[0.4em]">Strategic Deep Dive</span>
+                            <div className="h-px flex-1 bg-gradient-to-l from-blue-500/20 to-transparent" />
                           </div>
-                          <div>
-                            <p className="text-xs font-semibold text-slate-600 leading-relaxed">
-                              <span className="text-blue-600 font-black uppercase mr-2">Strategic Insight:</span>
-                              该板块核心热度集中在 {items[0]?.title.slice(0, 25)}...
-                              {groupId === 'gtc' ? ' 英伟达正通过 Blackwell 架构建立绝对的算力护城河，建议关注其对端侧推理的成本摊薄效应。' : ' 行业正处于从功能堆叠向体验闭环转型的关键期，SOP 节点普遍提前。'}
-                            </p>
-                          </div>
+
+                          <p className="text-[14px] font-medium text-slate-700 leading-[1.8] tracking-tight antialiased">
+                            {groupId === 'gtc' && (
+                              <>
+                                英伟达通过 Blackwell 架构实现了从“单体芯片”向“系统级集群”的范式转移。其 NVLink 交换机技术将 72 颗 GPU 融合成一个巨大的虚拟算力池，这不仅是算力的提升，更是对大模型训练效率的代际垄断。
+                                <span className="text-blue-600 font-black mx-2">// So What:</span>
+                                对比亚迪而言，这意味着单纯堆叠算力卡已失去边际效应。我们必须在“璇玑架构”中实现更深度的软硬解耦，并针对端侧推理进行非对称优化。建议立即评估 DRIVE Thor 在璇玑架构中的底层适配深度。
+                              </>
+                            )}
+                            {groupId === 'openclaw' && (
+                              <>
+                                OpenClaw 作为新一代开源大模型，正在重塑行业对“轻量化与高性能”的认知。其独特的架构设计使得在端侧设备上运行百亿级参数模型成为可能，这将极大地降低智能终端的 AI 部署成本。
+                                <span className="text-blue-600 font-black mx-2">// So What:</span>
+                                比亚迪应重点关注 OpenClaw 在车载算力平台上的适配性。如果能将这一开源生态引入璇玑架构，我们将获得一个强大的、可定制的端侧大脑，而不必依赖封闭的第三方方案。建议研发部门立即开启 OpenClaw 1.0 的实车部署测试，评估其在语音交互与座舱 Agent 场景中的延迟与精度表现。
+                              </>
+                            )}
+                            {groupId === 'adas' && (
+                              <>
+                                行业已全面进入“无图端到端”的决战期。特斯拉 FSD V12 的大规模推送证明了“世界模型”在处理极端长尾场景（Corner Cases）时的优越性。目前的竞争焦点已从“规则代码”转向“高质量数据闭环”。
+                                <span className="text-blue-600 font-black mx-2">// So What:</span>
+                                比亚迪的优势在于庞大的在途车队数据量。战略上应由“功能堆叠”转向“体验闭环”，重点突破端到端架构在璇玑平台上的实时推理效能，确保在智驾第一梯队中不掉队。
+                              </>
+                            )}
+                            {groupId === 'cockpit' && (
+                              <>
+                                智能座舱的竞争正从“屏幕尺寸”转向“AI Agent 交互深度”。大模型在端侧的落地（On-device AI）将彻底重塑人车关系。高通 8295 及其后续芯片的算力冗余将成为 AI 原生应用的温床。
+                                <span className="text-blue-600 font-black mx-2">// So What:</span>
+                                比亚迪应警惕座舱体验的“同质化陷阱”。我们的机会在于将璇玑架构的底层车辆控制权与 AI 大模型深度融合，打造“懂车、懂人、懂环境”的超级智能体。
+                              </>
+                            )}
+                            {groupId === 'ota' && (
+                              <>
+                                OTA 已成为衡量车企“软件定义汽车”能力的唯一金标准。头部新势力（如理想、小鹏）已实现算法周更，这背后是极其强大的 DevOps 体系。
+                                <span className="text-blue-600 font-black mx-2">// So What:</span>
+                                对比亚迪这种巨头，OTA 的挑战在于“碎片化管理”。战略上需通过璇玑架构实现底层软件的标准化，建立统一的云端影子模式测试平台。确保车辆在全生命周期内具备持续增值的能力。
+                              </>
+                            )}
+                            {groupId === 'sensor' && (
+                              <>
+                                传感器领域正经历“图像级”革命。华为 896 线激光雷达的发布，标志着传感器已具备超越人类视觉的感知精度。同时，纯视觉方案在成本上的优势依然对大众化市场具有致命吸引力。
+                                <span className="text-blue-600 font-black mx-2">// So What:</span>
+                                比亚迪应采取“分级策略”：高端车型通过超高线数雷达建立安全护城河，中低端车型通过璇玑架构的强大感知算法实现纯视觉平替。建立自研的感知大模型，实现对物理世界的“语义级”理解。
+                              </>
+                            )}
+                            {(!['gtc', 'openclaw', 'adas', 'cockpit', 'ota', 'sensor'].includes(groupId)) && (
+                              <>
+                                当前板块聚焦于行业底层的代际变革。AI 研判显示，竞争正从单一参数比拼转向底层全栈自研能力的系统性对抗。
+                                <span className="text-blue-600 font-black mx-2">// So What:</span>
+                                在这一轮范式转移中，比亚迪必须利用垂直整合的优势，将核心技术与智能化架构深度耦合，形成竞品无法轻易复制的系统级壁垒。
+                              </>
+                            )}
+                          </p>
                         </div>
                       </div>
 
@@ -248,17 +299,6 @@ export default function Home() {
                         {topItems.map(item => (
                           <IntelligenceCard key={item.id} item={item} />
                         ))}
-
-                        {otherItems.length > 0 && (
-                          <div className="bg-slate-50/30">
-                             <div className="px-8 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                               次要监测情报 ({otherItems.length})
-                             </div>
-                             {otherItems.map(item => (
-                               <IntelligenceCard key={item.id} item={item} />
-                             ))}
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
@@ -268,13 +308,13 @@ export default function Home() {
           )}
         </div>
 
-        <footer className="mt-24 pb-12 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4 opacity-20">
+        <footer className="mt-24 pb-12 text-center border-t border-slate-200 pt-12">
+          <div className="flex items-center justify-center gap-3 mb-4 opacity-30">
             <div className="h-px w-12 bg-slate-400" />
             <Brain className="w-4 h-4 text-slate-900" />
             <div className="h-px w-12 bg-slate-400" />
           </div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">
             Data Sync: {lastUpdate} • Autonomous Strategic Node
           </p>
         </footer>
