@@ -20,9 +20,9 @@
             "ir": "https://ir.tesla.com/news-releases"
           },
           "rss": {
-            "enabled": false,
-            "url": null,
-            "note": "需通过网页抓取"
+            "enabled": true,
+            "url": "https://www.tesla.com/blog/feed",
+            "note": "Tesla Blog RSS"
           },
           "scraping": {
             "enabled": true,
@@ -369,8 +369,8 @@
           "credibility_score": 80,
           "urls": {
             "homepage": "https://36kr.com",
-            "tech": "https://36kr.com/tech",
-            "auto": "https://36kr.com/club/1751945601411073"
+            "tech": "https://36kr.com/information/technology/",
+            "auto": "https://36kr.com/information/travel/"
           },
           "rss": {
             "enabled": false,
@@ -423,7 +423,7 @@
           "credibility_score": 80,
           "urls": {
             "homepage": "https://www.geekpark.net",
-            "auto": "https://www.geekpark.net/tag/智能汽车"
+            "auto": "https://www.geekpark.net/column/305"
           },
           "rss": {
             "enabled": false,
@@ -475,8 +475,7 @@
           "tier": 2,
           "credibility_score": 80,
           "urls": {
-            "homepage": "https://www.chedongxi.com",
-            "wechat": "https://mp.weixin.qq.com/s?__biz=MzI5ODAzNDc3NQ=="
+            "homepage": "https://www.chedongxi.com"
           },
           "rss": {
             "enabled": false,

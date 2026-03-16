@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { IndustryNews } from '@/types'
-import { ChevronRight, ChevronDown, ExternalLink, ShieldAlert, Zap, TrendingUp, AlertTriangle } from 'lucide-react'
-import { getFreshnessBadge } from '@/utils/intelligence'
+import { ChevronRight, ExternalLink, TrendingUp, Clock, Globe } from 'lucide-react'
+import { getFreshnessBadge, formatRelativeTime } from '@/utils/intelligence'
 
 interface IntelligenceCardProps {
   item: IndustryNews
 }
 
 export function IntelligenceCard({ item }: IntelligenceCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -21,116 +20,116 @@ export function IntelligenceCard({ item }: IntelligenceCardProps) {
   const tags = Array.isArray(item.keywords) ? item.keywords : []
 
   const getScoreColor = (score: number) => {
-    if (score >= 9) return 'text-red-600 border-red-200 bg-red-50'
-    if (score >= 8) return 'text-orange-600 border-orange-200 bg-orange-50'
-    return 'text-blue-600 border-blue-200 bg-blue-50'
+    if (score >= 9) return 'bg-red-500 text-white'
+    if (score >= 8) return 'bg-orange-500 text-white'
+    return 'bg-blue-600 text-white'
   }
 
   // 解析 NotebookLM 风格的 snippet
   const parseSnippet = (snippet: string) => {
-    if (!snippet) return { summary: '', full: '' };
+    if (!snippet) return { summary: '', strategy: '', countermeasures: '', trajectory: '' };
 
-    // 提取执行摘要作为预览
     const summaryMatch = snippet.match(/【战略执行摘要】\s*([\s\S]*?)(?=\n\n|【|$)/);
-    const summary = summaryMatch ? summaryMatch[1].trim() : snippet;
+    const counterMatch = snippet.match(/【战略对策】\s*([\s\S]*?)(?=\n\n|【|$)/);
+    const trajectoryMatch = snippet.match(/【行业轨迹】\s*([\s\S]*?)(?=\n\n|【|$)/);
 
-    // 格式化主体内容，加粗关键标题
-    const formatted = snippet.replace(/(【.*?】)/g, '**$1**');
-
-    return { summary, full: formatted };
+    return {
+      summary: summaryMatch ? summaryMatch[1].trim() : snippet.slice(0, 150),
+      strategy: summaryMatch ? summaryMatch[1].trim() : '',
+      countermeasures: counterMatch ? counterMatch[1].trim() : '',
+      trajectory: trajectoryMatch ? trajectoryMatch[1].trim() : ''
+    };
   }
 
-  const { summary, full } = parseSnippet(item.content);
+  const { summary, countermeasures } = parseSnippet(item.content);
 
-  // Hydration guard
   if (!mounted) return null;
 
   return (
-    <div
-      className={`group border-b border-slate-100 hover:bg-blue-50/50 transition-all cursor-pointer ${isExpanded ? 'bg-blue-50' : ''}`}
-      onClick={() => setIsExpanded(!isExpanded)}
-    >
-      <div className="flex items-center gap-4 px-8 py-4 min-h-[60px]">
-        <div className={`flex-shrink-0 w-12 h-6 flex items-center justify-center rounded-lg text-[10px] font-black border ${getScoreColor(item.quality_score || 0)} shadow-sm`}>
-          {item.quality_score?.toFixed(1)}
+    <div className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-300 transition-all flex flex-col h-full">
+      {/* 图片区域 */}
+      <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+        {item.image_url ? (
+          <img
+            src={item.image_url}
+            alt={item.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200">
+            <Globe className="w-12 h-12 text-slate-300" />
+          </div>
+        )}
+        <div className="absolute top-3 left-3 flex gap-2">
+          <div className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest shadow-lg ${getScoreColor(item.quality_score || 0)}`}>
+            Score {item.quality_score?.toFixed(1)}
+          </div>
+          <div className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest shadow-lg bg-white/90 text-slate-900 border border-slate-200 backdrop-blur-sm`}>
+            {item.source}
+          </div>
+        </div>
+      </div>
+
+      {/* 内容区域 */}
+      <div className="p-6 flex flex-col flex-1">
+        <div className="flex items-center gap-3 mb-3">
+          <span className={`text-[10px] font-black uppercase tracking-tighter ${freshness.color}`}>
+            {freshness.text}
+          </span>
+          <div className="h-1 w-1 rounded-full bg-slate-300" />
+          <div className="flex items-center gap-1 text-slate-400">
+            <Clock className="w-3 h-3" />
+            <span className="text-[10px] font-bold uppercase tracking-widest">
+              {formatRelativeTime(item.published_at || item.created_at)}
+            </span>
+          </div>
         </div>
 
-        <div className="flex-shrink-0 flex gap-2">
-          {tags.slice(0, 2).map(tag => (
-            <span key={tag} className="text-[9px] font-bold text-slate-500 uppercase tracking-tight border border-slate-200 px-2 py-0.5 rounded-md bg-white shadow-sm">
-              {tag}
+        <h3 className="text-lg font-black text-slate-900 leading-snug mb-3 group-hover:text-blue-700 transition-colors line-clamp-2">
+          {item.title}
+        </h3>
+
+        <p className="text-sm text-slate-600 line-clamp-3 mb-6 font-medium leading-relaxed">
+          {summary}
+        </p>
+
+        {/* 战略对策 (如果有) */}
+        {countermeasures && (
+          <div className="mt-auto pt-6 border-t border-slate-100">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-3 h-3 text-blue-600" />
+              <span className="text-[9px] font-black text-blue-700 uppercase tracking-widest">Strategic Action</span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-bold italic line-clamp-2 leading-relaxed">
+              "{countermeasures.split('\n')[0]}"
+            </p>
+          </div>
+        )}
+
+        {/* 标签 */}
+        <div className="flex flex-wrap gap-1.5 mt-4">
+          {tags.slice(0, 3).map(tag => (
+            <span key={tag} className="text-[9px] font-black text-slate-400 uppercase tracking-tighter border border-slate-100 px-2 py-0.5 rounded bg-slate-50">
+              #{tag}
             </span>
           ))}
         </div>
 
-        <div className="flex-grow min-w-0">
-          <p className={`text-base font-bold text-slate-900 transition-colors ${isExpanded ? '' : 'truncate'} group-hover:text-blue-700`}>
-            {item.title}
-          </p>
-          {!isExpanded && (
-            <p className="text-xs text-slate-500 truncate mt-0.5 opacity-70">
-              {summary}
-            </p>
-          )}
-        </div>
-
-        <div className="flex-shrink-0 flex items-center gap-4">
-          <span className={`text-xs font-black ${freshness.color} hidden md:block uppercase tracking-tighter`}>
-            {freshness.text.replace(/🔥 |⚡ |📌 |⏳ /, '')}
-          </span>
-          {isExpanded ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className="px-8 md:px-24 pb-8 pt-2 animate-in slide-in-from-top-2 duration-200">
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-md space-y-6">
-            <div className="flex items-start justify-between gap-6">
-              <h3 className="text-xl font-black text-slate-900 leading-tight tracking-tight">
-                {item.title}
-              </h3>
-              <a
-                href={item.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="p-2.5 bg-slate-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm border border-slate-100"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-6 border-y border-slate-100">
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Source</span>
-                <p className="text-xs font-bold text-slate-700">{item.source}</p>
-              </div>
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</span>
-                <p className="text-xs font-bold text-slate-700">{item.category}</p>
-              </div>
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</span>
-                <p className="text-xs font-bold text-slate-700">
-                  {new Date(item.published_at || item.created_at).toLocaleString('zh-CN')}
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Strategic Briefing (NotebookLM Style)</span>
-              </div>
-              <div className="text-sm leading-loose text-slate-700 whitespace-pre-wrap font-medium">
-                {full.split('**').map((part, i) =>
-                  i % 2 === 1 ? <strong key={i} className="text-slate-900 block mt-4 mb-1">{part}</strong> : part
-                )}
-              </div>
-            </div>
+        <div className="mt-6 flex items-center justify-between">
+          <a
+            href={item.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] hover:text-blue-800 transition-colors"
+          >
+            Read Intelligence
+            <ExternalLink className="w-3 h-3" />
+          </a>
+          <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-all">
+            <ChevronRight className="w-4 h-4" />
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

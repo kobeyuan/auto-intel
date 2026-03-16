@@ -70,6 +70,7 @@ export default function Home() {
         importance: (item.quality_score >= 8.5) ? 'high' : 'medium',
         quality_score: item.quality_score,
         verified: item.verified,
+        image_url: item.image_url,
         metadata: item.metadata || { tags: item.keywords || [] },
         created_at: item.created_at,
         published_at: item.published_at || item.created_at,
@@ -197,7 +198,7 @@ export default function Home() {
           ))}
         </nav>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading ? (
             <div className="col-span-full flex flex-col items-center justify-center py-32 space-y-6">
               <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin shadow-sm" />
@@ -205,7 +206,7 @@ export default function Home() {
                 Synchronizing Strategic Matrix...
               </p>
             </div>
-          ) : Object.entries(groupedData).length === 0 || Object.values(groupedData).every(items => items.length === 0) ? (
+          ) : intelligence.length === 0 ? (
             <div className="col-span-full bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem] p-32 text-center shadow-inner">
               <div className="inline-flex p-6 bg-slate-100 rounded-3xl mb-8">
                 <Radar className="w-12 h-12 text-slate-400" />
@@ -214,95 +215,15 @@ export default function Home() {
               <p className="text-sm text-slate-500 mt-4 font-medium">当前雷达范围内未发现符合战略评分的情报节点。</p>
             </div>
           ) : (
-            Object.entries(groupedData).map(([groupId, items]) => {
-              if (items.length === 0) return null;
-              const subInfo = SUB_SECTIONS.find(s => s.id === groupId) || mainTabs.find(t => t.id === groupId);
-              const isExpanded = expandedSections[groupId] !== false;
-              const topItems = items.slice(0, 8);
-
-              return (
-                <section key={groupId} className="flex flex-col bg-white/70 backdrop-blur-xl border border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden transition-all hover:border-blue-200 group/section h-full glow-card">
-                  <div
-                    className="flex items-center justify-between px-10 py-8 cursor-pointer hover:bg-slate-50/50 transition-all border-b border-slate-100"
-                    onClick={() => toggleSection(groupId)}
-                  >
-                    <div className="flex items-center gap-6">
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group-hover/section:border-blue-200 transition-colors shadow-sm">
-                        {subInfo?.icon ? <subInfo.icon className="w-6 h-6 text-blue-600" /> : <Activity className="w-6 h-6 text-blue-600" />}
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-black text-slate-900 tracking-widest uppercase">{subInfo?.label || '其他情报'}</h2>
-                        <div className="flex items-center gap-4 mt-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{items.length} Nodes Detected</span>
-                          <div className="h-1 w-1 rounded-full bg-slate-200" />
-                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">
-                            Peak Score: {(items[0]?.quality_score || 0).toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-100 rounded-md">
-                        <TrendingUp className="w-3 h-3 text-blue-600" />
-                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-tighter">AI 研判中</span>
-                      </div>
-                      {isExpanded ? <ChevronUp className="w-6 h-6 text-slate-400" /> : <ChevronDown className="w-6 h-6 text-slate-400" />}
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="flex flex-col flex-1">
-                      <div className="px-10 py-8 bg-slate-50/30 border-b border-slate-100">
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-3">
-                            <div className="h-px flex-1 bg-gradient-to-r from-blue-500/20 to-transparent" />
-                            <span className="text-[11px] font-black text-blue-600 uppercase tracking-[0.4em]">Strategic Deep Dive</span>
-                            <div className="h-px flex-1 bg-gradient-to-l from-blue-500/20 to-transparent" />
-                          </div>
-
-                          <p className="text-[14px] font-medium text-slate-700 leading-[1.8] tracking-tight antialiased">
-                            {groupId === 'gtc-insight' && (
-                              <>
-                                英伟达通过 Rubin 架构实现了从“单体芯片”向“系统级集群”的范式转移。其 NVLink 交换机技术将 72 颗 GPU 融合成一个巨大的虚拟算力池，这不仅是算力的提升，更是对大模型训练效率的代际垄断。
-                                <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                对比亚迪而言，这意味着单纯堆叠算力卡已失去边际效应。我们必须在“璇玑架构”中实现更深度的软硬解耦，并针对端侧推理进行非对称优化。建议立即评估 DRIVE Thor 在璇玑架构中的底层适配深度。
-                              </>
-                            )}
-                            {groupId === 'openclaw' && (
-                              <>
-                                OpenClaw 具身智能 (Embodied AI) 正在重新定义机器人的物理交互上限。其将大模型的语义理解能力直接映射到末端执行器的扭矩控制上，实现了从“脑”到“手”的无缝贯通。
-                                <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                比亚迪应将具身智能视为“移动终端”的终极形态。重点关注其在工业生产线自动化（工业机器人）以及未来车载助理物理交互（具身座舱）中的应用。建议研发部门立即开启 OpenClaw 与 Isaac 平台的联合测试，探索其在复杂非标场景下的泛化控制能力。
-                              </>
-                            )}
-                            {groupId === 'sensors' && (
-                              <>
-                                传感器领域正经历“图像级”革命。4D 成像雷达与固态激光雷达的规模化 SOP 标志着全天候感知能力的基准线被大幅拉高。
-                                <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                比亚迪应采取“分级感知架构”：高端车型通过 4D 成像雷达补足长距离感知短板，中低端车型通过璇玑架构的算法冗余实现对昂贵传感器的减配降本。重点建立自研的感知融合大模型，实现对物理世界的“语义级”深度理解。
-                              </>
-                            )}
-                            {(!['gtc-insight', 'openclaw', 'autonomous-driving', 'smart-cockpit', 'ota', 'sensors'].includes(groupId)) && (
-                              <>
-                                当前板块聚焦于行业底层的代际变革。AI 研判显示，竞争正从单一参数比拼转向底层全栈自研能力的系统性对抗。
-                                <span className="text-blue-600 font-black mx-2">// So What:</span>
-                                在这一轮范式转移中，比亚迪必须利用垂直整合的优势，将核心技术与智能化架构深度耦合，形成竞品无法轻易复制的系统级壁垒。
-                              </>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="divide-y divide-slate-100">
-                        {topItems.map(item => (
-                          <IntelligenceCard key={item.id} item={item} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </section>
-              )
-            })
+            intelligence
+              .filter(item => {
+                if (activeTab === 'all') return true;
+                const activeCategory = mainTabs.find(t => t.id === activeTab)?.category;
+                return item.category === activeCategory;
+              })
+              .map(item => (
+                <IntelligenceCard key={item.id} item={item} />
+              ))
           )}
         </div>
 
