@@ -79,28 +79,40 @@ class IntelligenceCrawler:
             if not target_url: continue
 
             try:
-                resp = self.session.get(target_url, timeout=20)
+                # 使用 User-Agent 伪装
+                headers = self.session.headers.copy()
+                resp = self.session.get(target_url, timeout=20, headers=headers)
+
+                # 如果 403 或 404，尝试使用首页回退
+                if resp.status_code in [403, 404] and source['urls'].get('homepage') and target_url != source['urls'].get('homepage'):
+                    print(f"   ⚠️ 尝试回退到首页: {source['urls']['homepage']}")
+                    resp = self.session.get(source['urls']['homepage'], timeout=20)
+
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, 'html.parser')
 
                 selector = source['scraping'].get('selector', 'a')
-                # 这是一个简化的通用抓取逻辑，实际可能需要针对每个 site 定制
-                # 但为了系统健壮性，我们先实现一个基于选择器的通用逻辑
                 found_links = []
-                for element in soup.select(selector):
-                    link_tag = element if element.name == 'a' else element.find('a')
-                    if link_tag and link_tag.get('href'):
-                        href = urljoin(target_url, link_tag['href'])
-                        title = element.get_text().strip()
-                        if len(title) > 5:
-                            found_links.append({"title": title, "link": href})
+                # 尝试更宽泛的选择逻辑
+                for link_tag in soup.find_all('a'):
+                    href = link_tag.get('href')
+                    if not href or href.startswith(('javascript:', 'tel:', 'mailto:', '#')): continue
 
-                # 对发现的链接进行深度抓取（获取图片和详情）
-                for link_info in found_links[:5]:
+                    full_url = urljoin(target_url, href)
+                    if not full_url.startswith('http'): continue
+
+                    title = link_tag.get_text().strip()
+
+                    # 过滤逻辑：长度、关键词
+                    if len(title) > 10 and not any(k in title for k in ['Privacy', 'Terms', 'Cookie', 'About']):
+                        found_links.append({"title": title, "link": full_url})
+
+                # 对发现的链接进行深度抓取
+                for link_info in found_links[:3]:
                     item = self.process_article(link_info['link'], link_info['title'], source)
                     if item:
                         all_items.append(item)
-                    time.sleep(1)
+                    time.sleep(2)
             except Exception as e:
                 print(f"   ⚠️ 抓取 {source['name']} 失败: {e}")
 

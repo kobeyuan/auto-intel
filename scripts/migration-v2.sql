@@ -5,8 +5,9 @@
 -- 1. 扩展 industry_intelligence 表
 -- ===========================================
 
--- 新增字段：来源可信度、AI分析、时效性等
+-- 新增字段：来源可信度、AI分析、时效性、图片等
 ALTER TABLE industry_intelligence
+ADD COLUMN IF NOT EXISTS image_url TEXT,
 ADD COLUMN IF NOT EXISTS summary TEXT,
 ADD COLUMN IF NOT EXISTS source_credibility TEXT,
 ADD COLUMN IF NOT EXISTS publish_time TIMESTAMP,
