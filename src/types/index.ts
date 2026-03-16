@@ -54,6 +54,7 @@ export interface IndustryNews {
   importance: 'high' | 'medium' | 'low';
   quality_score?: number;
   verified?: boolean;
+  image_url?: string;
   metadata?: {
     tags?: string[];
     ai_analysis?: {
